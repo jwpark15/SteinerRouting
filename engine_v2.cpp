@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <stdio.h>
+#include <cstdio>
 
 using namespace std;
 #define SIZE 5
@@ -93,16 +95,38 @@ void runPrim(int (&graph_D)[rowsD][colsD], int (&graph_y)[rowsy][colsy], int (&g
     return;
 }
 
+
+template <size_t N1, size_t N2>
+void parseFile(int (&x)[N1], int (&y)[N2], const char filename[]) 
+{
+    ifstream benchmark(filename, ios::in);
+    std::string word;
+    for (int i = 0; i < N1; ++i) {
+        benchmark >> word;
+        x[i] = stoi(word);
+        benchmark >> word;
+        y[i] = stoi(word);
+    }
+    return;
+}
+
 int main()
 {
-    //char filename[] = "Points/points_10_5.pts";
-    //calculateEdgeWeights(&edge_list[0], num_edges, filename);
-    
+    // TODO get filename from command line parsing
+    const char filename[] = "Points/points_10_5.pts";
+
+    // TODO get number of nodes using strtok from filename
     // N is number of nodes in graph
     const int N = SIZE;
-    //std::cout << edge_list[0] << std::endl;
-    int x[5] = {3,5,3,10,2};
-    int y[5] = {5,9,1,3,7};
+    int x[N];
+    int y[N];
+    
+    parseFile(x, y, filename);
+    /* Print for Debugging 
+    for (int i = 0; i < N; ++i) {
+        cout << x[i] << ", " << y[i] << endl;
+    }
+    */
 
     // init graphs for Manhattan Distance, y difference, and x maximum
     int graph_D[N][N];
