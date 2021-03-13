@@ -84,8 +84,9 @@ void runPrim(int (&graph_D)[rowsD][colsD], int (&graph_y)[rowsy][colsy], int (&g
                     cout << "Dist: " << dist << endl;
                     node_parents[j] = min_index;
                     node_keys[j] = dist;
-                } 
-                // add additional checks here
+                } else if (dist == node_keys[j]) {
+                    // add additional checks here
+                }
             } 
         }
     }
