@@ -1,83 +1,86 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <string.h>
 #include <stdio.h>
 #include <cstdio>
 
 using namespace std;
 #define SIZE 5
-
+#define DEBUG 1
 
 // update graph 2D array with weights of Manhattan Distance
 // row and column dimensions should be the same for all arrays
-template <size_t rowsD, size_t colsD, size_t rowsy, size_t colsy, size_t rowsx, size_t colsx>
-void createWeightGraphs(int (&graph_D)[rowsD][colsD], int (&graph_y)[rowsy][colsy], int (&graph_x)[rowsx][colsx], int *x_pts, int *y_pts)
+void createWeightGraphs(int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts, int N)
 {
     int x1, x2, y1, y2;
-    for (int i=0; i < rowsD; ++i) {
+    int ptr_val = 0;
+    for (int i=0; i < N; ++i) {
         x1 = *(x_pts + i);
         y1 = *(y_pts + i);
-        for (int j=0; j < colsD; ++j) {
+        for (int j=0; j < N; ++j) {
+            ptr_val = i*N + j; 
             x2 = *(x_pts + j);
             y2 = *(y_pts + j);
-            graph_D[i][j] = abs(x1 - x2) + abs(y1 - y2); 
-            graph_y[i][j] = -abs(y1 - y2);
+            *(graph_D + ptr_val) = abs(x1 - x2) + abs(y1 - y2); 
+            *(graph_y + ptr_val) = -abs(y1 - y2);
             if (x1 > x2) {
-                graph_x[i][j] = -1 * x1;
+                *(graph_x + ptr_val) = -1 * x1;
             } else {
-                graph_x[i][j] = -1 * x2;
+                *(graph_x + ptr_val) = -1 * x2;
             }
             
-            /* Prints for Debugging
-            cout << "i: " << i << ", j: " << j << endl;
-            cout << graph_D[i][j] << endl;
-            cout << graph_y[i][j] << endl;
-            cout << graph_x[i][j] << endl;
-            */
+            // Print for debug 
+            if (DEBUG) {
+                cout << "i: " << i << ", j: " << j << endl;
+                cout << *(graph_D + ptr_val) << endl;
+                cout << *(graph_y + ptr_val) << endl;
+                cout << *(graph_x + ptr_val) << endl;
+            }
         } 
     }
     return;
 }
             
 
-template <size_t num1, size_t num2>
-int findMinKeyIndex(int (&key_arr)[num1], bool (&connected_arr)[num2])
+int findMinKeyIndex(int *key_arr, bool *connected_arr, int N)
 {
     int min_val = 99999999;
     int min_index;
 
-    for (int i = 0; i < num1; ++i) {
-        if (connected_arr[i] == false && key_arr[i] < min_val) {
-            min_val = key_arr[i];
+    for (int i = 0; i < N; ++i) {
+        if (*(connected_arr + i) == false && *(key_arr + i) < min_val) {
+            min_val = *(key_arr + i);
             min_index = i;
         }
     }
-    /* Print for Debugging
-    cout << min_index << endl;
-    */
+    // Print for Debug
+    if (DEBUG)
+        cout << "MIN INDEX: " << min_index << endl;
+
     return min_index;
 }
 
-template <size_t rowsD, size_t colsD, size_t rowsy, size_t colsy, size_t rowsx, size_t colsx>
-void runPrim(int (&graph_D)[rowsD][colsD], int (&graph_y)[rowsy][colsy], int (&graph_x)[rowsx][colsx])
+void runPrim(int *graph_D, int *graph_y, int *graph_x, int N)
 {
     // init MST arrays 
-    bool connected[rowsD] = {false};
-    int node_keys[rowsD];
-    for (int x = 0; x < rowsD; ++x)
+    bool connected[N] = {false};
+    int node_keys[N];
+    for (int x = 0; x < N; ++x)
         node_keys[x] = 99999999;
     node_keys[0] = 0;
-    int node_parents[rowsD];
+    int node_parents[N];
     node_parents[0] = -1;
     
     int min_index, dist;
-    for (int i = 0; i < rowsD; ++i) {
-        min_index = findMinKeyIndex(node_keys, connected);
+    for (int i = 0; i < N; ++i) {
+        min_index = findMinKeyIndex(node_keys, connected, N);
         
         // add node to tree
         connected[min_index] = true;
-        for (int j = 0; j < colsD; ++j) {
-            dist = graph_D[min_index][j]; 
+        for (int j = 0; j < N; ++j) {
+            dist = *(graph_D + N*min_index + j); 
+            cout << "DIST: " << dist << endl;
             if (dist && !connected[j]) {
                 if (dist < node_keys[j]) {
                     cout << "Min index: " << min_index << endl;
@@ -90,44 +93,62 @@ void runPrim(int (&graph_D)[rowsD][colsD], int (&graph_y)[rowsy][colsy], int (&g
             } 
         }
     }
-    for (int i = 0; i < rowsD; ++i) {
+    for (int i = 0; i < N; ++i) {
         cout << "Parent: " << node_parents[i] << ", Child: " << i << endl;
     }
     return;
 }
 
 
-template <size_t N1, size_t N2>
-void parseFile(int (&x)[N1], int (&y)[N2], const char filename[]) 
+void parseFile(int *x, int *y, int N, const char filename[]) 
 {
     ifstream benchmark(filename, ios::in);
     std::string word;
-    for (int i = 0; i < N1; ++i) {
+    for (int i = 0; i < N; ++i) {
         benchmark >> word;
-        x[i] = stoi(word);
+        *(x + i) = stoi(word);
         benchmark >> word;
-        y[i] = stoi(word);
+        *(y + i) = stoi(word);
     }
     return;
 }
 
-int main()
+int getNumNodes(std::string filepath)
 {
-    // TODO get filename from command line parsing
-    const char filename[] = "Points/points_10_5.pts";
+    cout << "FILE: " << filepath << endl;
+    int index1 = filepath.find_last_of('_');
+    int index2 = filepath.find_last_of('.');
+    std::string temp_str = filepath.substr(index1 + 1, index2 - index1 - 1);
+    int num_nodes = stoi(temp_str);
 
+    //cout << num_nodes << endl;
+    
+    return num_nodes;
+}
+
+int main(int argc, char** argv)
+{
+    cout << argv[1] << endl;
+    const char *filename = argv[1];
+    std::string temp_filename = argv[1];
+   
+    int N = getNumNodes(temp_filename);
+
+    cout << "NUM NODES: " << N << endl;
     // TODO get number of nodes using strtok from filename
     // N is number of nodes in graph
-    const int N = SIZE;
+    //const int N = SIZE;
     int x[N];
     int y[N];
     
-    parseFile(x, y, filename);
-    /* Print for Debugging 
-    for (int i = 0; i < N; ++i) {
-        cout << x[i] << ", " << y[i] << endl;
-    }
-    */
+    parseFile(x, y, N, filename);
+    
+    // Print for debug
+    if (DEBUG) {
+        for (int i = 0; i < N; ++i) {
+            cout << x[i] << ", " << y[i] << endl;
+        }
+    } 
 
     // init graphs for Manhattan Distance, y difference, and x maximum
     int graph_D[N][N];
@@ -135,10 +156,8 @@ int main()
     int graph_x[N][N];
 
     // create 2D arrays with values for Prim
-    createWeightGraphs(graph_D, graph_y, graph_x, &x[0], &y[0]); 
-    
+    createWeightGraphs(*graph_D, *graph_y, *graph_x, x, y, N); 
     // Run Prim's Algorithm
-    runPrim(graph_D, graph_y, graph_x);
-
+    runPrim(*graph_D, *graph_y, *graph_x, N);
     return 0;
 }
