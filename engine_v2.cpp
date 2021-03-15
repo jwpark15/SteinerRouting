@@ -61,6 +61,17 @@ int findMinKeyIndex(int *key_arr, bool *connected_arr, int N)
     return min_index;
 }
 
+void writePrimResults(int *parent_nodes, int N)
+{
+    ofstream results;
+    results.open("primResults.txt");
+    for (int i = 0; i < N; ++i) {
+        results << *(parent_nodes + i) << " " << i << "\n";
+    }
+    results.close();
+    return;
+}
+
 void runPrim(int *graph_D, int *graph_y, int *graph_x, int N)
 {
     // init MST arrays 
@@ -80,7 +91,6 @@ void runPrim(int *graph_D, int *graph_y, int *graph_x, int N)
         connected[min_index] = true;
         for (int j = 0; j < N; ++j) {
             dist = *(graph_D + N*min_index + j); 
-            cout << "DIST: " << dist << endl;
             if (dist && !connected[j]) {
                 if (dist < node_keys[j]) {
                     cout << "Min index: " << min_index << endl;
@@ -93,9 +103,15 @@ void runPrim(int *graph_D, int *graph_y, int *graph_x, int N)
             } 
         }
     }
-    for (int i = 0; i < N; ++i) {
-        cout << "Parent: " << node_parents[i] << ", Child: " << i << endl;
+    
+    // Print for debug
+    if (DEBUG) {
+        for (int i = 0; i < N; ++i) {
+            cout << "Parent: " << node_parents[i] << ", Child: " << i << endl;
+        }
     }
+
+    writePrimResults(node_parents, N);
     return;
 }
 
