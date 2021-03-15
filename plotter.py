@@ -48,4 +48,4 @@ def plot_MST(file_pts, file_mst):
 
 
 if __name__ == "__main__":
-    plot_MST("Points/points_10_20.pts", "primResults.txt")
+    plot_MST("Points/points_10_5.pts", "primResults.txt")
