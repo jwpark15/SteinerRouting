@@ -33,9 +33,7 @@ void createWeightGraphs(int *graph_D, int *graph_y, int *graph_x, int *x_pts, in
             // Print for debug 
             if (DEBUG) {
                 cout << "i: " << i << ", j: " << j << endl;
-                cout << *(graph_D + ptr_val) << endl;
-                cout << *(graph_y + ptr_val) << endl;
-                cout << *(graph_x + ptr_val) << endl;
+                cout << "(" << *(graph_D + ptr_val) << ", " << *(graph_y + ptr_val) << ", " << *(graph_x + ptr_val) << ")" << endl;
             }
         } 
     }
