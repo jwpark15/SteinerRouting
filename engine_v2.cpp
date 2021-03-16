@@ -43,21 +43,51 @@ void createWeightGraphs(int *graph_D, int *graph_y, int *graph_x, int *x_pts, in
 }
             
 
-int findMinKeyIndex(int *key_arr, int *key_arr_y, int *key_arr_x, bool *connected_arr, int N)
+int findMinKeyIndex(int *key_arr, bool *connected_arr, int N)
 {
-    int min_val, min_val_x, min_val_y = 99999999;
-    int min_index, min_index_y, min_index_x;
+    int min_val = 99999999;
+    int min_index;
 
     for (int i = 0; i < N; ++i) {
+
         if (*(connected_arr + i) == false && *(key_arr + i) < min_val) {
             min_val = *(key_arr + i);
             min_index = i;
         }
 
+    }
+    // Print for Debug
+    if (DEBUG)
+        cout << "MIN INDEX: " << min_index << endl;
+
+    return min_index;
+}
+
+int findMinKeyIndexY(int *key_arr_y, bool *connected_arr, int N)
+{
+    int min_val_y = 99999999;
+    int min_index_y;
+
+    for (int i = 0; i < N; ++i) {
+
         if (*(connected_arr + i) == false && *(key_arr_y + i) < min_val_y) {
             min_val_y = *(key_arr_y + i);
             min_index_y = i;
         }
+    }
+    // Print for Debug
+    if (DEBUG)
+        cout << "MIN INDEX Y: " << min_index_y << endl;
+
+    return min_index_y;
+}
+
+int findMinKeyIndexX(int *key_arr_x, bool *connected_arr, int N)
+{
+    int min_val_x = 99999999;
+    int min_index_x;
+
+    for (int i = 0; i < N; ++i) {
 
         if (*(connected_arr + i) == false && *(key_arr_x + i) < min_val_x) {
             min_val_x = *(key_arr_x + i);
@@ -66,11 +96,9 @@ int findMinKeyIndex(int *key_arr, int *key_arr_y, int *key_arr_x, bool *connecte
     }
     // Print for Debug
     if (DEBUG)
-        cout << "MIN INDEX: " << min_index << endl;
-        cout << "MIN INDEX Y: " << min_index_y << endl;
         cout << "MIN INDEX X: " << min_index_x << endl;
 
-    return min_index;
+    return min_index_x;
 }
 
 void writePrimResults(int *parent_nodes, int N)
@@ -101,33 +129,35 @@ void runPrim(int *graph_D, int *graph_y, int *graph_x, int N)
     int node_parents[N];
     node_parents[0] = -1;
     
-    int min_index, dist, y_diff, x_max;
+    int min_index, min_index_y, min_index_x, dist, y_diff, x_max;
     for (int i = 0; i < N; ++i) {
-        min_index = findMinKeyIndex(node_keys, node_keys_y, node_keys_x, connected, N);
+        min_index = findMinKeyIndex(node_keys, connected, N);
+        min_index_y = findMinKeyIndex(node_keys_y, connected, N);
+        min_index_x = findMinKeyIndex(node_keys_x, connected, N);
         
         // add node to tree
         connected[min_index] = true;
         for (int j = 0; j < N; ++j) {
             dist = *(graph_D + N*min_index + j);
             if (dist && !connected[j]) {
+                y_diff = *(graph_y + N*min_index + j); 
+                x_max = *(graph_x + N*min_index + j);
                 if (dist < node_keys[j]) {
                     //cout << "Min index: " << min_index << endl;
                     //cout << "Dist: " << dist << endl;
-                    y_diff = *(graph_y + N*min_index + j); 
-                    x_max = *(graph_x + N*min_index + j); 
                     node_parents[j] = min_index;
                     node_keys[j] = dist;
                     node_keys_y[j] = y_diff;
                     node_keys_x[j] = x_max;
                 } else if (dist == node_keys[j]) {
                     if (y_diff < node_keys_y[j]) {
-                        node_parents[j] = min_index;
+                        node_parents[j] = min_index_y;
                         node_keys[j] = dist;
                         node_keys_y[j] = y_diff;
                         node_keys_x[j] = x_max;
                     } else if (y_diff == node_keys_y[j]) {
                         if (x_max < node_keys_x[j]) {
-                            node_parents[j] = min_index;
+                            node_parents[j] = min_index_x;
                             node_keys[j] = dist;
                             node_keys_y[j] = y_diff;
                             node_keys_x[j] = x_max;
