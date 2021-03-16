@@ -75,15 +75,21 @@ void writePrimResults(int *parent_nodes, int N)
 void runPrim(int *graph_D, int *graph_y, int *graph_x, int N)
 {
     // init MST arrays 
-    bool connected[N] = {false};
+    bool connected[N];
     int node_keys[N];
-    for (int x = 0; x < N; ++x)
+    int node_keys_y[N];
+    int node_keys_x[N];
+    for (int x = 0; x < N; ++x) {
+        connected[x] = false;
         node_keys[x] = 99999999;
+        node_keys_y[x] = 99999999;
+        node_keys_x[x] = 99999999;
+    }
     node_keys[0] = 0;
     int node_parents[N];
     node_parents[0] = -1;
     
-    int min_index, dist;
+    int min_index, dist, y_diff, x_max;
     for (int i = 0; i < N; ++i) {
         min_index = findMinKeyIndex(node_keys, connected, N);
         
@@ -92,13 +98,29 @@ void runPrim(int *graph_D, int *graph_y, int *graph_x, int N)
         for (int j = 0; j < N; ++j) {
             dist = *(graph_D + N*min_index + j); 
             if (dist && !connected[j]) {
+                y_diff = *(graph_y + N*min_index + j); 
+                x_max = *(graph_x + N*min_index + j); 
                 if (dist < node_keys[j]) {
-                    cout << "Min index: " << min_index << endl;
-                    cout << "Dist: " << dist << endl;
+                    //cout << "Min index: " << min_index << endl;
+                    //cout << "Dist: " << dist << endl;
                     node_parents[j] = min_index;
                     node_keys[j] = dist;
+                    node_keys_y[j] = y_diff;
+                    node_keys_x[j] = x_max;
                 } else if (dist == node_keys[j]) {
-                    // add additional checks here
+                    if (y_diff < node_keys_y[j]) {
+                        node_parents[j] = min_index;
+                        node_keys[j] = dist;
+                        node_keys_y[j] = y_diff;
+                        node_keys_x[j] = x_max;
+                    } else if (y_diff == node_keys_y[j]) {
+                        if (x_max < node_keys_x[j]) {
+                            node_parents[j] = min_index;
+                            node_keys[j] = dist;
+                            node_keys_y[j] = y_diff;
+                            node_keys_x[j] = x_max;
+                        } 
+                    }
                 }
             } 
         }
