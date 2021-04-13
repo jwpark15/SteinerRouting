@@ -132,8 +132,8 @@ void runPrim(int *graph_D, int *graph_y, int *graph_x, int N)
     int min_index, min_index_y, min_index_x, dist, y_diff, x_max;
     for (int i = 0; i < N; ++i) {
         min_index = findMinKeyIndex(node_keys, connected, N);
-        min_index_y = findMinKeyIndexX(node_keys_y, connected, N);
-        min_index_x = findMinKeyIndexY(node_keys_x, connected, N);
+        min_index_y = findMinKeyIndexY(node_keys_y, connected, N);
+        min_index_x = findMinKeyIndexX(node_keys_x, connected, N);
         
         // add node to tree
         connected[min_index] = true;
