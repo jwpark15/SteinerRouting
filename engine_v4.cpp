@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <cstdio>
 #include <vector>
+#include <stack>
 
 using namespace std;
 #define SIZE 5
@@ -257,6 +258,169 @@ void runPrim(int *graph_D, int *graph_y, int *graph_x, int parent_nodes[], int c
     return;
 }
 
+class Node {
+    public:
+        Node(int val, int x_coord, int y_coord);
+        // basic setters/getters
+        void set_upper_Z(int z) {upper_Z = z;}
+        void set_lower_Z(int z) {lower_Z = z;}
+        void set_parent(int p) {parent = p;}
+        void set_parent_x(int px) {parent_x = px;}
+        void set_parent_y(int py) {parent_y = py;}
+        void add_child(int c) {children.push_back(c);}
+        void add_child_x(int cx) {children_x.push_back(cx);}
+        void add_child_y(int cy) {children_y.push_back(cy);}
+        void set_x(int coord) {x = coord;}
+        void set_y(int coord) {y = coord;}
+        int get_x(void) {return x;}
+        int get_y(void) {return y;}
+        
+        // funcs for tree traversal 
+        int pick_next_child(void);
+        void partialLRST(void);
+        void calculate_upperL_overlap(void);
+        void calculate_lowerL_overlap(void);
+
+        //debugging
+        void print_children();
+    private:
+        int tag;
+        int x;
+        int y;
+        int lower_Z;
+        int upper_Z;
+        std::vector<int> upper; //vector of orientations for children if node is upper
+        std::vector<int> lower; //vector of orientations for children if node is lower
+        std::vector<int> children;
+        std::vector<int> children_x;
+        std::vector<int> children_y;
+        int parent;
+        int parent_x;
+        int parent_y;
+        int child_pointer; // keep track of which branches have been traversed
+};
+
+void Node::print_children()
+{
+    cout << "printing children: " << endl;
+    for(auto it = begin(children); it != end(children); ++it)
+        cout << *it << endl;
+}
+  
+Node::Node(int val, int x_coord, int y_coord)
+{
+    tag = val;
+    lower_Z = 0;
+    upper_Z = 0;
+    x = x_coord;
+    y = y_coord;
+    child_pointer = 0;
+}
+
+// return -1 if bottom node or all children have been traversed
+// else return tag of next child
+int Node::pick_next_child(void)
+{
+    if (children.size() == 0 || child_pointer >= children.size()) {
+        return -1;
+    } else {
+        int temp_pointer = child_pointer++;
+        return children[temp_pointer]; 
+    }
+}
+
+
+void Node::calculate_upperL_overlap(void)
+{
+    int corner_x = (parent_y > y) ? x : parent_x;
+    int corner_y = (parent_y > y) ? parent_y : y;
+}
+
+void Node::calculate_lowerL_overlap(void)
+{
+    int corner_x = (parent_y < y) ? x : parent_x;
+    int corner_y = (parent_y < y) ? parent_y : y;
+}
+
+
+void Node::partialLRST(void)
+{
+    // skip bottom nodes
+    if (children.size() != 0) {
+        // upper L
+        calculate_upperL_overlap();
+
+        // lower L
+        calculate_lowerL_overlap();
+    }
+
+}
+
+
+void createTree(vector<Node> &tree, int parent_nodes[], int child_nodes[], int x[], int y[], int N)
+{
+    // each vector index is a Node object
+    // index corresponds to node ID
+    for (int i = 0; i<N; ++i) {
+        Node node(i, x[i], y[i]);
+        tree.push_back(node);
+    }
+
+    // add parents and children to Node objects
+    int p, c;
+    for (int j = 0; j<N; ++j) {
+        p = parent_nodes[j];
+        c = child_nodes[j];
+        tree[c].set_parent(p);
+        tree[c].set_parent_x(x[p]);
+        tree[c].set_parent_y(y[p]);
+        if (p != -1) {
+            tree[p].add_child(c);
+            tree[p].add_child_x(x[c]);
+            tree[p].add_child_y(y[c]);
+        }
+    }
+
+    return;
+}
+
+
+void calculateOverlapBottomUp(vector<Node> &tree, int N)
+{
+    stack<int> node_stack;
+    int nodesProcessed = 0;
+    int current_node = 0;
+    int next_node = 0;
+    node_stack.push(current_node);
+    tree[current_node].print_children();
+      
+    while(nodesProcessed < N) {
+        current_node = node_stack.top();
+        next_node = tree[current_node].pick_next_child();
+        if(next_node == -1) {
+            node_stack.pop(); 
+            nodesProcessed++;
+            tree[current_node].partialLRST();
+            cout << "popping: " << current_node << "...Nodes processed: " << nodesProcessed << endl;
+        } else {
+            cout << "next node is: " << next_node << endl;
+            node_stack.push(next_node);
+        }
+    }
+}
+
+void runLRST(int *graph_D, int *graph_y, int *graph_x, int x[], int y[], int parent_nodes[], int child_nodes[], int N)
+{
+    // initialize tree
+    vector<Node> tree;
+    createTree(tree, parent_nodes, child_nodes, x, y, N); 
+
+    calculateOverlapBottomUp(tree, N);
+    return;
+}
+
+
+
 int steinerCalculation(int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts, int bottom, int middle, int top)  {
 
     // function needs to return the proper orientation of connections between nodes
@@ -471,7 +635,7 @@ void runSteiner(int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts
 
         //cout << "potential: " << potentialParent << endl;
 
-        // now, we need to see how many times this parent has appeared
+        // now, we need to see how any times this parent has appeared
 
         for (int j = 0; j < N; j++) {
             if (potentialParent == parent_nodes[j]) {
@@ -557,8 +721,6 @@ void runSteiner(int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts
 
             parentFound = false;
             
-            potentialStart = i;
-            potentialMiddle = sortedParents[i];
 
             failedFirstTest = false;
             failedSecondTest = false;
@@ -808,7 +970,6 @@ int main(int argc, char** argv)
     int N = getNumNodes(temp_filename);
 
     cout << "NUM NODES: " << N << endl;
-    // TODO get number of nodes using strtok from filename
     // N is number of nodes in graph
     //const int N = SIZE;
     int x[N];
@@ -836,11 +997,13 @@ int main(int argc, char** argv)
     // Run Prim's Algorithm
     runPrim(*graph_D, *graph_y, *graph_x, parent_nodes, child_nodes, N);
 
+    // Run L-RST Algorithm
+    runLRST(*graph_D, *graph_y, *graph_x, x, y, parent_nodes, child_nodes, N);
     //used for testing
     //steinerCalculation(*graph_D, *graph_y, *graph_x, x, y, 5, 6, 7);
 
     // Run Steiner Algorithm
-    runSteiner(*graph_D, *graph_y, *graph_x, x, y, parent_nodes, child_nodes, N);
+    //runSteiner(*graph_D, *graph_y, *graph_x, x, y, parent_nodes, child_nodes, N);
 
     calculateWL(parent_nodes, child_nodes, *graph_D, *graph_y, *graph_x, x, y, N);
 
