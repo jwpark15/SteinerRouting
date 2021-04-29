@@ -276,14 +276,21 @@ class Node {
         void set_y(int coord) {y = coord;}
         int get_x(void) {return x;}
         int get_y(void) {return y;}
+        int get_lower_Z(void) {return lower_Z;}
+        int get_upper_Z(void) {return upper_Z;}
+        int get_upper(void) {return upper;}
+        int get_lower(void) {return lower;}
+        int get_child_pointer(void) {return child_pointer;}
         
         // funcs for tree traversal 
         int pick_next_child(void);
-        void partialLRST(void);
+        void reset_child_pointer(void) {child_pointer = 0;}
+        void partialLRST(vector<Node> &tree);
         void update_upper_Z(int overlap, int orientation);
-        void calculate_upperL_overlap(void);
-        void calculate_lowerL_overlap(void);
-        void processRoot(void);
+        void update_lower_Z(int overlap, int orientation);
+        void calculate_upperL_overlap(vector<Node> &tree);
+        void calculate_lowerL_overlap(vector<Node> &tree);
+        void processRoot(vector<Node> &tree);
 
         //debugging
         void print_children();
@@ -314,6 +321,8 @@ void Node::print_children()
 Node::Node(int val, int x_coord, int y_coord)
 {
     tag = val;
+    upper = 0;
+    lower = 0;
     lower_Z = 0;
     upper_Z = 0;
     x = x_coord;
@@ -339,6 +348,14 @@ void Node::update_upper_Z(int overlap, int orientation)
     if (overlap > upper_Z) {
         upper_Z = overlap;
         upper = orientation;
+    }
+}
+
+void Node::update_lower_Z(int overlap, int orientation)
+{
+    if (overlap > lower_Z) {
+        lower_Z = overlap;
+        lower = orientation;
     }
 }
 
@@ -370,9 +387,8 @@ void add_LowerL_to_Line_vectors(vector<VertLine> &vert_lines, vector<HorizLine> 
     vert_lines.push_back(Lside);
     horiz_lines.push_back(Lbottom);
    
-    if (DEBUG) { 
-        cout << "adding Lower L: bottom - {" << Lbottom.y << ", " << Lbottom.x1 << ", " << Lbottom.x2 << "}; side - {" << Lside.x << ", " << Lside.y1 << ", " << Lside.y2 << "}" << endl;
-    }
+
+       // cout << "adding Lower L: bottom - {" << Lbottom.y << ", " << Lbottom.x1 << ", " << Lbottom.x2 << "}; side - {" << Lside.x << ", " << Lside.y1 << ", " << Lside.y2 << "}" << endl;
 }
 
 
@@ -397,11 +413,6 @@ void add_UpperL_to_Line_vectors(vector<VertLine> &vert_lines, vector<HorizLine> 
 }
 
 
-void Node::processRoot(void)
-{
-
-
-}
 
 int calculate_vertical_overlap(vector<VertLine> &vert_lines)
 {
@@ -418,13 +429,13 @@ int calculate_vertical_overlap(vector<VertLine> &vert_lines)
         cout << "size of combined " << size_c << endl;
         for (int i = 0; i < size_c; ++i) {
             if ((*vert).x == combined_vert_lines[i].x) {
-                cout << "CHECK" << endl;
+                overlap += max(0, min((*vert).y2, combined_vert_lines[i].y2) - max((*vert).y1, combined_vert_lines[i].y1));
                 if ((*vert).y1 < combined_vert_lines[i].y1) {
-                    overlap += combined_vert_lines[i].y1 - (*vert).y1;
+                    //overlap += combined_vert_lines[i].y1 - (*vert).y1;
                     combined_vert_lines[i].y1 = (*vert).y1;
                 }
                 if ((*vert).y2 > combined_vert_lines[i].y2) {
-                    overlap += (*vert).y2 - combined_vert_lines[i].y2;
+                    //overlap += (*vert).y2 - combined_vert_lines[i].y2;
                     combined_vert_lines[i].y2 = (*vert).y2;
                 }
             } else {
@@ -449,16 +460,17 @@ int calculate_horizontal_overlap(vector<HorizLine> &horiz_lines)
             continue;
         }
         size_c = combined_horiz_lines.size();
-        cout << "size of combined " << size_c << endl;
+        //cout << "size of combined " << size_c << endl;
         for (int i = 0; i < size_c; ++i) {
             if ((*horiz).y == combined_horiz_lines[i].y) {
                 cout << "CHECK" << endl;
+                overlap += max(0, min((*horiz).x2, combined_horiz_lines[i].x2) - max((*horiz).x1, combined_horiz_lines[i].x1));
                 if ((*horiz).x1 < combined_horiz_lines[i].x1) {
-                    overlap += combined_horiz_lines[i].x1 - (*horiz).x1;
+                    //overlap += combined_horiz_lines[i].x1 - (*horiz).x1;
                     combined_horiz_lines[i].x1 = (*horiz).x1;
                 }
                 if ((*horiz).x2 > combined_horiz_lines[i].x2) {
-                    overlap += (*horiz).x2 - combined_horiz_lines[i].x2;
+                    //overlap += (*horiz).x2 - combined_horiz_lines[i].x2;
                     combined_horiz_lines[i].x2 = (*horiz).x2;
                 }
             } else {
@@ -482,56 +494,123 @@ int calculate_Z1(vector<VertLine> &vert_lines, vector<HorizLine> &horiz_lines)
     return overlap;
 }
 
-void Node::calculate_upperL_overlap(void)
+void Node::calculate_upperL_overlap(vector<Node> &tree)
 {
     int c = children.size();
-    int mask, child_x, child_y, overlap, Z1, Z2;
+    int mask, child, child_x, child_y, overlap, Z1, Z2; 
     for (int i = 0; i < pow(2,c); ++i) {
         vector<VertLine> vert_lines;
         vector<HorizLine> horiz_lines;
         // add parent/cur upper L 
-        cout << "parent (x,y) for tag " << tag << " {" << parent_x << ", " << parent_y << "}" << endl;
+        //cout << "parent (x,y) for tag " << tag << " {" << parent_x << ", " << parent_y << "}" << endl;
         add_UpperL_to_Line_vectors(vert_lines, horiz_lines, x, parent_x, y, parent_y);
         Z2 = 0;
 
         // add all lines
         for (int j = 0; j < c; ++j) {
+            child = children[j];
             child_x = children_x[j];
             child_y = children_y[j];
             // fancy masking to get all orientations
             mask = i & (1<<j);
             if(mask == 0) { // lower L
                 cout << "Lower L" << i << ", " << j << endl;
-                Z2 += lower_Z;
+                Z2 += tree[child].get_lower_Z();
                 add_LowerL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
             } else { // upper L
                 cout << "Upper L" << i << ", " << j << endl;
-                Z2 += upper_Z;
+                Z2 += tree[child].get_upper_Z();
                 add_UpperL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
             }
             Z1 = calculate_Z1(vert_lines, horiz_lines);
             overlap = Z1 + Z2;
+            cout << "update upper: " << overlap << ", " << mask << endl;
             update_upper_Z(overlap, mask);
+        }
+        //DEBUG
+        cout << "UPPER: " << get_upper() << endl << "--------------------------------" << endl;
+    }
+}
+
+void Node::calculate_lowerL_overlap(vector<Node> &tree)
+{
+    int c = children.size();
+    int mask, child, child_x, child_y, overlap, Z1, Z2;
+    for (int i = 0; i < pow(2,c); ++i) {
+        vector<VertLine> vert_lines;
+        vector<HorizLine> horiz_lines;
+        // add parent/cur upper L 
+        cout << "parent (x,y) for tag " << tag << " {" << parent_x << ", " << parent_y << "}" << endl;
+        add_LowerL_to_Line_vectors(vert_lines, horiz_lines, x, parent_x, y, parent_y);
+        Z2 = 0;
+
+        // add all lines
+        for (int j = 0; j < c; ++j) {
+            child = children[j];
+            child_x = children_x[j];
+            child_y = children_y[j];
+            // fancy masking to get all orientations
+            mask = i & (1<<j);
+            if(mask == 0) { // lower L
+                cout << "Lower L" << i << ", " << j << endl;
+                Z2 += tree[child].get_lower_Z();
+                add_LowerL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
+            } else { // upper L
+                cout << "Upper L" << i << ", " << j << endl;
+                Z2 += tree[child].get_upper_Z();
+                add_UpperL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
+            }
+            Z1 = calculate_Z1(vert_lines, horiz_lines);
+            overlap = Z1 + Z2;
+            update_lower_Z(overlap, mask);
         }
     }
 }
 
-void Node::calculate_lowerL_overlap(void)
+void Node::processRoot(vector<Node> &tree)
 {
-    int corner_x = (parent_y < y) ? x : parent_x;
-    int corner_y = (parent_y < y) ? parent_y : y;
+    int c = children.size();
+    cout << "C: " << c << endl;
+    int mask, child, child_x, child_y, overlap, Z1, Z2; 
+    for (int i = 0; i < pow(2,c); ++i) {
+        vector<VertLine> vert_lines;
+        vector<HorizLine> horiz_lines;
+        // add parent/cur upper L 
+        Z2 = 0;
+
+        cout << "======================================" << endl;
+        // add all lines
+        for (int j = 0; j < c; ++j) {
+            child = children[j];
+            child_x = children_x[j];
+            child_y = children_y[j];
+            // fancy masking to get all orientations
+            mask = i & (1<<j);
+            if(mask == 0) { // lower L
+                cout << "Lower L" << i << ", " << j << endl;
+                Z2 += tree[child].get_lower_Z();
+                add_LowerL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
+            } else { // upper L
+                cout << "Upper L" << i << ", " << j << endl;
+                Z2 += tree[child].get_upper_Z();
+                add_UpperL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
+            }
+            Z1 = calculate_Z1(vert_lines, horiz_lines);
+            overlap = Z1 + Z2;
+            update_upper_Z(overlap, mask); //using upper Z even though there is no parent 
+        }
+    }
 }
 
-
-void Node::partialLRST(void)
+void Node::partialLRST(vector<Node> &tree)
 {
     // skip bottom nodes
     if (children.size() != 0) {
         // upper L
-        calculate_upperL_overlap();
+        calculate_upperL_overlap(tree);
 
         // lower L
-        calculate_lowerL_overlap();
+        calculate_lowerL_overlap(tree);
     }
 
 }
@@ -580,16 +659,84 @@ void calculateOverlapBottomUp(vector<Node> &tree, int N)
         if(next_node == -1) {
             node_stack.pop(); 
             nodesProcessed++;
-            tree[current_node].partialLRST();
+            tree[current_node].partialLRST(tree);
             cout << "popping: " << current_node << "...Nodes processed: " << nodesProcessed << endl;
         } else {
             cout << "next node is: " << next_node << endl;
             node_stack.push(next_node);
         }
     }
-    tree[0].processRoot();
+    cout << "processing root node..." << endl;
+    tree[0].processRoot(tree);
+    // DEBUG
+    for (int a = 0; a < N; ++a) {
+        cout << "INDEX: " << a << "----------upper Z: " << tree[a].get_upper_Z() << "...lower Z: " << tree[a].get_lower_Z() << "----------" << endl;
+        cout << "upper orientation: " << tree[a].get_upper() << "...lower orientation: " << tree[a].get_lower() << endl;
+    }
 }
 
+int setChildOrientation(vector<Node> &tree, int parent_node, int child_index, int isUpper)
+{
+    int orientation = (isUpper) ? tree[parent_node].get_upper() : tree[parent_node].get_lower();
+    int masked = orientation & (1<<child_index);
+    cout << "orientation: " << orientation << "...mask: " << masked << endl;
+    if (masked == 0) {
+        return 0; // lower
+    } else { 
+        return 1; // upper
+    }
+
+}
+
+void assign_Ls_top_down(vector<Node> &tree, int L_assignments[], int N)
+{
+    int numberAssigned = 1;
+    int current_node = 0;
+    int next_node = 0;
+    int overall_Z = 0;
+    int isUpper = 1; // 1 for upper, 0 for lower
+    int child_index = 0;
+    stack<int> top_down_stack;
+    top_down_stack.push(current_node);
+
+    for(int i = 0; i<N; ++i) 
+        tree[i].reset_child_pointer();
+
+    //DEBUG 
+    for (int aa = 0; aa<N; ++aa) {
+        cout << "index: " << aa << "...upper: " << tree[aa].get_upper() << "...lower: " << tree[aa].get_lower() << endl;
+    }
+    while (numberAssigned < N) {
+        current_node = top_down_stack.top();    
+        next_node = tree[current_node].pick_next_child();
+        //cout << "next child: " << next_node << endl;
+        if(next_node == -1) {
+            top_down_stack.pop();
+            //cout << "popping: " << current_node << endl;
+            isUpper = L_assignments[top_down_stack.top()];
+        } else {
+            numberAssigned++;
+            cout << "nodes assigned: " << numberAssigned << endl;
+            child_index = (tree[current_node].get_child_pointer()) - 1;
+            //cout << "Child indx: " << child_index << endl;
+            int temp = setChildOrientation(tree, current_node, child_index, isUpper);
+            L_assignments[next_node] = temp;
+            isUpper = temp;
+            top_down_stack.push(next_node);
+        }
+    }
+}
+
+void writeLRSTResults(int L[], int N)
+{
+    ofstream results;
+    results.open("LRSTResults.txt");
+    for(int i = 0; i < N; ++i)
+        results << L[i] << endl;
+    results.close();
+    return;
+
+}
 void runLRST(int *graph_D, int *graph_y, int *graph_x, int x[], int y[], int parent_nodes[], int child_nodes[], int N)
 {
     // initialize tree
@@ -597,6 +744,12 @@ void runLRST(int *graph_D, int *graph_y, int *graph_x, int x[], int y[], int par
     createTree(tree, parent_nodes, child_nodes, x, y, N); 
 
     calculateOverlapBottomUp(tree, N);
+
+    int L_assignments[N]; // for each index, 0 is lower, 1 is upper
+    L_assignments[0] = 1;
+    cout << "assign Ls" << endl;
+    assign_Ls_top_down(tree, L_assignments, N);
+    writeLRSTResults(L_assignments, N);
     return;
 }
 
@@ -1142,6 +1295,17 @@ int getNumNodes(std::string filepath)
     return num_nodes;
 }
 
+
+void exportFilename(const char *filename)
+{
+    ofstream results;
+    results.open("benchmark.txt");
+    results << filename;
+    results.close();
+    return;
+
+}
+
 int main(int argc, char** argv)
 {
     cout << argv[1] << endl;
@@ -1157,6 +1321,8 @@ int main(int argc, char** argv)
     int y[N];
     
     parseFile(x, y, N, filename);
+
+    exportFilename(filename);
     
     // Print for debug
     if (DEBUG) {
