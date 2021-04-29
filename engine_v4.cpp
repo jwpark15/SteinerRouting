@@ -727,12 +727,12 @@ void assign_Ls_top_down(vector<Node> &tree, int L_assignments[], int N)
     }
 }
 
-void writeLRSTResults(int L[], int N)
+void writeLRSTResults(int L[], int parent_nodes[], int child_nodes[], int N)
 {
     ofstream results;
     results.open("LRSTResults.txt");
     for(int i = 0; i < N; ++i)
-        results << L[i] << endl;
+        results << parent_nodes[i] << " " << child_nodes[i] << " " <<  L[i] << endl;
     results.close();
     return;
 
@@ -749,7 +749,7 @@ void runLRST(int *graph_D, int *graph_y, int *graph_x, int x[], int y[], int par
     L_assignments[0] = 1;
     cout << "assign Ls" << endl;
     assign_Ls_top_down(tree, L_assignments, N);
-    writeLRSTResults(L_assignments, N);
+    writeLRSTResults(L_assignments, parent_nodes, child_nodes, N);
     return;
 }
 
