@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <vector>
 #include <stack>
+#include <math.h>
+#include <algorithm> //for min/max
 
 using namespace std;
 #define SIZE 5
@@ -278,8 +280,10 @@ class Node {
         // funcs for tree traversal 
         int pick_next_child(void);
         void partialLRST(void);
+        void update_upper_Z(int overlap, int orientation);
         void calculate_upperL_overlap(void);
         void calculate_lowerL_overlap(void);
+        void processRoot(void);
 
         //debugging
         void print_children();
@@ -289,8 +293,8 @@ class Node {
         int y;
         int lower_Z;
         int upper_Z;
-        std::vector<int> upper; //vector of orientations for children if node is upper
-        std::vector<int> lower; //vector of orientations for children if node is lower
+        int upper; // binary represetnation of orientations for children if node is upper. 0 = lower, 1 = upper. LSB first index of children
+        int lower; // binary representation of orientations for children if node is lower. 0 = lower, 1 = upper. LSB first index of children
         std::vector<int> children;
         std::vector<int> children_x;
         std::vector<int> children_y;
@@ -330,10 +334,186 @@ int Node::pick_next_child(void)
 }
 
 
+void Node::update_upper_Z(int overlap, int orientation)
+{
+    if (overlap > upper_Z) {
+        upper_Z = overlap;
+        upper = orientation;
+    }
+}
+
+struct HorizLine {
+    int y;
+    int x1;
+    int x2;
+};
+
+struct VertLine {
+    int x;
+    int y1;
+    int y2;
+};
+
+
+void add_LowerL_to_Line_vectors(vector<VertLine> &vert_lines, vector<HorizLine> &horiz_lines, int x1, int x2, int y1, int y2)
+{
+    HorizLine Lbottom;
+    VertLine Lside;
+    Lbottom.x1 = min(x1, x2);
+    Lbottom.x2 = max(x1, x2);
+    Lbottom.y = (y1 < y2) ? y1 : y2;
+
+    Lside.y1 = min(y1, y2);
+    Lside.y2 = max(y1, y2);
+    Lside.x = (y1 < y2) ? x2 : x1;
+    
+    vert_lines.push_back(Lside);
+    horiz_lines.push_back(Lbottom);
+   
+    if (DEBUG) { 
+        cout << "adding Lower L: bottom - {" << Lbottom.y << ", " << Lbottom.x1 << ", " << Lbottom.x2 << "}; side - {" << Lside.x << ", " << Lside.y1 << ", " << Lside.y2 << "}" << endl;
+    }
+}
+
+
+void add_UpperL_to_Line_vectors(vector<VertLine> &vert_lines, vector<HorizLine> &horiz_lines, int x1, int x2, int y1, int y2)
+{
+    HorizLine Ltop;
+    VertLine Lside;
+    Ltop.x1 = min(x1, x2);
+    Ltop.x2 = max(x1, x2);
+    Ltop.y = (y1 > y2) ? y1 : y2;
+
+    Lside.y1 = min(y1, y2);
+    Lside.y2 = max(y1, y2);
+    Lside.x = (y1 > y2) ? x2 : x1;
+    
+    vert_lines.push_back(Lside);
+    horiz_lines.push_back(Ltop);
+   
+    if (DEBUG) { 
+        cout << "adding Upper L: top - {" << Ltop.y << ", " << Ltop.x1 << ", " << Ltop.x2 << "}; side - {" << Lside.x << ", " << Lside.y1 << ", " << Lside.y2 << "}" << endl;
+    }
+}
+
+
+void Node::processRoot(void)
+{
+
+
+}
+
+int calculate_vertical_overlap(vector<VertLine> &vert_lines)
+{
+    int overlap = 0;
+    int size_c;
+    vector<VertLine> combined_vert_lines;
+    for (auto vert = vert_lines.begin(); vert != vert_lines.end(); ++vert) {
+        cout << "vert: " << (*vert).x << endl;
+        if (combined_vert_lines.size() == 0) {
+            combined_vert_lines.push_back((*vert));
+            continue;
+        }
+        size_c = combined_vert_lines.size();
+        cout << "size of combined " << size_c << endl;
+        for (int i = 0; i < size_c; ++i) {
+            if ((*vert).x == combined_vert_lines[i].x) {
+                cout << "CHECK" << endl;
+                if ((*vert).y1 < combined_vert_lines[i].y1) {
+                    overlap += combined_vert_lines[i].y1 - (*vert).y1;
+                    combined_vert_lines[i].y1 = (*vert).y1;
+                }
+                if ((*vert).y2 > combined_vert_lines[i].y2) {
+                    overlap += (*vert).y2 - combined_vert_lines[i].y2;
+                    combined_vert_lines[i].y2 = (*vert).y2;
+                }
+            } else {
+                combined_vert_lines.push_back((*vert));
+            }
+        }
+    }
+    return overlap;
+}
+
+
+
+int calculate_horizontal_overlap(vector<HorizLine> &horiz_lines)
+{
+    int overlap = 0;
+    int size_c;
+    vector<HorizLine> combined_horiz_lines;
+    for (auto horiz = horiz_lines.begin(); horiz != horiz_lines.end(); ++horiz) {
+        cout << "horiz: " << (*horiz).y << endl;
+        if (combined_horiz_lines.size() == 0) {
+            combined_horiz_lines.push_back((*horiz));
+            continue;
+        }
+        size_c = combined_horiz_lines.size();
+        cout << "size of combined " << size_c << endl;
+        for (int i = 0; i < size_c; ++i) {
+            if ((*horiz).y == combined_horiz_lines[i].y) {
+                cout << "CHECK" << endl;
+                if ((*horiz).x1 < combined_horiz_lines[i].x1) {
+                    overlap += combined_horiz_lines[i].x1 - (*horiz).x1;
+                    combined_horiz_lines[i].x1 = (*horiz).x1;
+                }
+                if ((*horiz).x2 > combined_horiz_lines[i].x2) {
+                    overlap += (*horiz).x2 - combined_horiz_lines[i].x2;
+                    combined_horiz_lines[i].x2 = (*horiz).x2;
+                }
+            } else {
+                combined_horiz_lines.push_back((*horiz));
+            }
+        }
+    }
+    return overlap;
+}
+
+
+
+
+int calculate_Z1(vector<VertLine> &vert_lines, vector<HorizLine> &horiz_lines)
+{
+    int overlap = 0;
+    overlap += calculate_vertical_overlap(vert_lines);
+    overlap += calculate_horizontal_overlap(horiz_lines);
+    
+    cout << "Overlap: " << overlap << endl;
+    return overlap;
+}
+
 void Node::calculate_upperL_overlap(void)
 {
-    int corner_x = (parent_y > y) ? x : parent_x;
-    int corner_y = (parent_y > y) ? parent_y : y;
+    int c = children.size();
+    int mask, child_x, child_y, overlap, Z1, Z2;
+    for (int i = 0; i < pow(2,c); ++i) {
+        vector<VertLine> vert_lines;
+        vector<HorizLine> horiz_lines;
+        // add parent/cur upper L 
+        cout << "parent (x,y) for tag " << tag << " {" << parent_x << ", " << parent_y << "}" << endl;
+        add_UpperL_to_Line_vectors(vert_lines, horiz_lines, x, parent_x, y, parent_y);
+        Z2 = 0;
+
+        // add all lines
+        for (int j = 0; j < c; ++j) {
+            child_x = children_x[j];
+            child_y = children_y[j];
+            // fancy masking to get all orientations
+            mask = i & (1<<j);
+            if(mask == 0) { // lower L
+                cout << "Lower L" << i << ", " << j << endl;
+                Z2 += lower_Z;
+                add_LowerL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
+            } else { // upper L
+                cout << "Upper L" << i << ", " << j << endl;
+                Z2 += upper_Z;
+                add_UpperL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
+            }
+            Z1 = calculate_Z1(vert_lines, horiz_lines);
+            overlap = Z1 + Z2;
+            update_upper_Z(overlap, mask);
+        }
+    }
 }
 
 void Node::calculate_lowerL_overlap(void)
@@ -392,9 +572,9 @@ void calculateOverlapBottomUp(vector<Node> &tree, int N)
     int current_node = 0;
     int next_node = 0;
     node_stack.push(current_node);
-    tree[current_node].print_children();
       
-    while(nodesProcessed < N) {
+    //process all except root node
+    while(nodesProcessed < (N-1)) {
         current_node = node_stack.top();
         next_node = tree[current_node].pick_next_child();
         if(next_node == -1) {
@@ -407,6 +587,7 @@ void calculateOverlapBottomUp(vector<Node> &tree, int N)
             node_stack.push(next_node);
         }
     }
+    tree[0].processRoot();
 }
 
 void runLRST(int *graph_D, int *graph_y, int *graph_x, int x[], int y[], int parent_nodes[], int child_nodes[], int N)
