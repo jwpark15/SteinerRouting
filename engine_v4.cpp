@@ -8,28 +8,32 @@
 #include <stack>
 #include <math.h>
 #include <algorithm> //for min/max
+#include <ctime>
+
 
 using namespace std;
-#define SIZE 5
+
+// set to 0 to disable debugging prints
 #define DEBUG 1
+#define VERBOSE_DEBUG 0
 
-int totalOverlap = 0;
 
-// update graph 2D array with weights of Manhattan Distance
+// update graph 2D arrays with weights of Manhattan Distance, y difference, x maximum
 // row and column dimensions should be the same for all arrays
 void createWeightGraphs(int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts, int N)
 {
-    int x1, x2, y1, y2;
+    int x1, x2, y1, y2; // x and y coordinates of points to compare
     int ptr_val = 0;
     for (int i=0; i < N; ++i) {
         x1 = *(x_pts + i);
         y1 = *(y_pts + i);
         for (int j=0; j < N; ++j) {
-            ptr_val = i*N + j; 
+            ptr_val = i*N + j;  // used to access next array element
             x2 = *(x_pts + j);
             y2 = *(y_pts + j);
-            *(graph_D + ptr_val) = abs(x1 - x2) + abs(y1 - y2); 
-            *(graph_y + ptr_val) = -abs(y1 - y2);
+            *(graph_D + ptr_val) = abs(x1 - x2) + abs(y1 - y2); // Manhattan distance
+            *(graph_y + ptr_val) = -abs(y1 - y2); // difference in y points
+            // x max
             if (x1 > x2) {
                 *(graph_x + ptr_val) = -1 * x1;
             } else {
@@ -37,76 +41,19 @@ void createWeightGraphs(int *graph_D, int *graph_y, int *graph_x, int *x_pts, in
             }
             
             // Print for debug 
-            /*
-            if (DEBUG) {
+            if (VERBOSE_DEBUG) {
                 cout << "i: " << i << ", j: " << j << endl;
                 cout << "<" << *(graph_D + ptr_val) << ", " << *(graph_y + ptr_val) << ", " << *(graph_x + ptr_val) << ">" << endl;
             }
-            */
         } 
     }
     return;
 }
             
 
-int findMinKeyIndex(int *key_arr, bool *connected_arr, int N)
-{
-    int min_val = 99999999;
-    int min_index;
-
-    for (int i = 0; i < N; ++i) {
-
-        if (*(connected_arr + i) == false && *(key_arr + i) < min_val) {
-            min_val = *(key_arr + i);
-            min_index = i;
-        }
-
-    }
-    // Print for Debug
-    if (DEBUG)
-        cout << "MIN INDEX: " << min_index << endl;
-
-    return min_index;
-}
-
-int findMinKeyIndexY(int *key_arr_y, bool *connected_arr, int N)
-{
-    int min_val_y = 99999999;
-    int min_index_y;
-
-    for (int i = 0; i < N; ++i) {
-
-        if (*(connected_arr + i) == false && *(key_arr_y + i) < min_val_y) {
-            min_val_y = *(key_arr_y + i);
-            min_index_y = i;
-        }
-    }
-    // Print for Debug
-    if (DEBUG)
-        cout << "MIN INDEX Y: " << min_index_y << endl;
-
-    return min_index_y;
-}
-
-int findMinKeyIndexX(int *key_arr_x, bool *connected_arr, int N)
-{
-    int min_val_x = 99999999;
-    int min_index_x;
-
-    for (int i = 0; i < N; ++i) {
-
-        if (*(connected_arr + i) == false && *(key_arr_x + i) < min_val_x) {
-            min_val_x = *(key_arr_x + i);
-            min_index_x = i;
-        }
-    }
-    // Print for Debug
-    if (DEBUG)
-        cout << "MIN INDEX X: " << min_index_x << endl;
-
-    return min_index_x;
-}
-
+// write results of Prim's Algorithm to file
+// each line of format: parent child 
+// -1 is parent of root
 void writePrimResults(int *parent_nodes, int *child_nodes, int N)
 {
     ofstream results;
@@ -118,15 +65,16 @@ void writePrimResults(int *parent_nodes, int *child_nodes, int N)
     return;
 }
 
+// class to store important parameters for running Prim
 class PrimParams {
     public:
         PrimParams(int N);
+        // basic getters/setters
         int get_dist()   {return dist;}
         int get_y_diff() {return y_diff;}
         int get_x_max()  {return x_max;}
         int get_parent() {return parent;}
         int get_child()  {return child;} 
-
         void set_dist(int d)   {dist = d;}
         void set_y_diff(int y) {y_diff = y;}
         void set_x_max(int x)  {x_max = x;}
@@ -147,6 +95,7 @@ class PrimParams {
         vector<bool> connectedPoints;
 };
 
+// constructor for initialization
 PrimParams::PrimParams(int N)
 {
     for(int i = 0; i<N; ++i) {
@@ -156,6 +105,7 @@ PrimParams::PrimParams(int N)
     connectedPoints[0] = true;
 }
 
+// reset parameters for new run
 void PrimParams::refresh_all()
 {
     dist = 999999;
@@ -166,6 +116,7 @@ void PrimParams::refresh_all()
 }
 
 
+// set all major parameters at once
 void PrimParams::set_all(int d, int y, int x, int p, int c) 
 {
     dist = d;
@@ -175,6 +126,8 @@ void PrimParams::set_all(int d, int y, int x, int p, int c)
     child = c;
 }
 
+// check weights and update values if necessary
+// used to determine the proper parent/child relationships
 void PrimParams::check_params(int d, int y, int x, int p, int c)
 {
     if (d < dist) {
@@ -192,12 +145,10 @@ void PrimParams::check_params(int d, int y, int x, int p, int c)
     }
 }
 
+// add node to MST with correct parent/child relationship
 void PrimParams::add_node(int *graph_D, int *graph_y, int *graph_x, int N)
 {
-    int d, y, x;
-
-    int reference = 12;
-    int endPoint = 9;
+    int d, y, x, reference, endPoint; // temp parameters
 
     for (int j = 0; j < N; j++) {
         if (connectedPoints[j]) { //if already connected
@@ -219,11 +170,12 @@ void PrimParams::add_node(int *graph_D, int *graph_y, int *graph_x, int N)
             y = *(graph_y + N*reference + endPoint); // y difference
             x = *(graph_x + N*reference + endPoint); // x max
 
-            check_params(d, y, x, reference, endPoint);
+            check_params(d, y, x, reference, endPoint); // check against current best weights and update if necessary
         }
     }
 }
 
+// generate Minimum Spanning Tree
 void runPrim(int *graph_D, int *graph_y, int *graph_x, int parent_nodes[], int child_nodes[], int N)
 {
     // initialize MST parameters
@@ -236,18 +188,13 @@ void runPrim(int *graph_D, int *graph_y, int *graph_x, int parent_nodes[], int c
     while (numberConnected != N) {
         // add node to tree
         params.add_node(graph_D, graph_y, graph_x, N);
-
         params.set_connected(params.get_child());
-
-        cout << "Parent: " << params.get_parent() << endl;
-        cout << "Child: " << params.get_child() << endl;
-        cout << "number connected: " << numberConnected << endl;
 
         parent_nodes[numberConnected] = params.get_parent();
         child_nodes[numberConnected] = params.get_child();
         numberConnected++;
 
-        params.refresh_all();
+        params.refresh_all(); // reset params for next node
     }
 
     writePrimResults(parent_nodes, child_nodes, N);
@@ -262,6 +209,7 @@ void runPrim(int *graph_D, int *graph_y, int *graph_x, int parent_nodes[], int c
     return;
 }
 
+// class to hold information for each tree node
 class Node {
     public:
         Node(int val, int x_coord, int y_coord);
@@ -292,7 +240,7 @@ class Node {
         void update_lower_Z(int overlap, int orientation);
         void calculate_upperL_overlap(vector<Node> &tree);
         void calculate_lowerL_overlap(vector<Node> &tree);
-        void processRoot(vector<Node> &tree);
+        int processRoot(vector<Node> &tree);
 
         //debugging
         void print_children();
@@ -302,17 +250,18 @@ class Node {
         int y;
         int lower_Z;
         int upper_Z;
-        int upper; // binary represetnation of orientations for children if node is upper. 0 = lower, 1 = upper. LSB first index of children
+        int upper; // binary representation of orientations for children if node is upper. 0 = lower, 1 = upper. LSB first index of children
         int lower; // binary representation of orientations for children if node is lower. 0 = lower, 1 = upper. LSB first index of children
-        std::vector<int> children;
+        std::vector<int> children; // tags of all children
         std::vector<int> children_x;
         std::vector<int> children_y;
-        int parent;
+        int parent; // tag of parent
         int parent_x;
         int parent_y;
         int child_pointer; // keep track of which branches have been traversed
 };
 
+// for debugging
 void Node::print_children()
 {
     cout << "printing children: " << endl;
@@ -320,6 +269,7 @@ void Node::print_children()
         cout << *it << endl;
 }
   
+// constructor for parameter initialization
 Node::Node(int val, int x_coord, int y_coord)
 {
     tag = val;
@@ -345,6 +295,7 @@ int Node::pick_next_child(void)
 }
 
 
+// get the best gain for upper L
 void Node::update_upper_Z(int overlap, int orientation)
 {
     if (overlap > upper_Z) {
@@ -353,6 +304,7 @@ void Node::update_upper_Z(int overlap, int orientation)
     }
 }
 
+// get the best gain for lower L
 void Node::update_lower_Z(int overlap, int orientation)
 {
     if (overlap > lower_Z) {
@@ -374,6 +326,8 @@ struct VertLine {
 };
 
 
+// add break lower L into horizontal and vertical components
+// add components to collection of line segments
 void add_LowerL_to_Line_vectors(vector<VertLine> &vert_lines, vector<HorizLine> &horiz_lines, int x1, int x2, int y1, int y2)
 {
     HorizLine Lbottom;
@@ -390,10 +344,12 @@ void add_LowerL_to_Line_vectors(vector<VertLine> &vert_lines, vector<HorizLine> 
     horiz_lines.push_back(Lbottom);
    
 
-       // cout << "adding Lower L: bottom - {" << Lbottom.y << ", " << Lbottom.x1 << ", " << Lbottom.x2 << "}; side - {" << Lside.x << ", " << Lside.y1 << ", " << Lside.y2 << "}" << endl;
+    // cout << "adding Lower L: bottom - {" << Lbottom.y << ", " << Lbottom.x1 << ", " << Lbottom.x2 << "}; side - {" << Lside.x << ", " << Lside.y1 << ", " << Lside.y2 << "}" << endl;
 }
 
 
+// add break upper L into horizontal and vertical components
+// add components to collection of line segments
 void add_UpperL_to_Line_vectors(vector<VertLine> &vert_lines, vector<HorizLine> &horiz_lines, int x1, int x2, int y1, int y2)
 {
     HorizLine Ltop;
@@ -418,28 +374,26 @@ void add_UpperL_to_Line_vectors(vector<VertLine> &vert_lines, vector<HorizLine> 
 
 
 
+// calculate amount of overlap given collection of vertical line segments
 int calculate_vertical_overlap(vector<VertLine> &vert_lines)
 {
     int overlap = 0;
     int size_c;
     vector<VertLine> combined_vert_lines;
     for (auto vert = vert_lines.begin(); vert != vert_lines.end(); ++vert) {
-        //cout << "vert: " << (*vert).x << endl;
         if (combined_vert_lines.size() == 0) {
             combined_vert_lines.push_back((*vert));
             continue;
         }
         size_c = combined_vert_lines.size();
-        //cout << "size of combined " << size_c << endl;
         for (int i = 0; i < size_c; ++i) {
+            // overlap only if x coordinates are the same
             if ((*vert).x == combined_vert_lines[i].x) {
                 overlap += max(0, min((*vert).y2, combined_vert_lines[i].y2) - max((*vert).y1, combined_vert_lines[i].y1));
                 if ((*vert).y1 < combined_vert_lines[i].y1) {
-                    //overlap += combined_vert_lines[i].y1 - (*vert).y1;
                     combined_vert_lines[i].y1 = (*vert).y1;
                 }
                 if ((*vert).y2 > combined_vert_lines[i].y2) {
-                    //overlap += (*vert).y2 - combined_vert_lines[i].y2;
                     combined_vert_lines[i].y2 = (*vert).y2;
                 }
             } else {
@@ -447,34 +401,31 @@ int calculate_vertical_overlap(vector<VertLine> &vert_lines)
             }
         }
     }
-    cout << "vertical overlap: " << overlap << endl;
+    if(VERBOSE_DEBUG) {cout << "vertical overlap: " << overlap << endl;}
     return overlap;
 }
 
 
-
+// calculate amount of overlap given collection of horizontal line segments
 int calculate_horizontal_overlap(vector<HorizLine> &horiz_lines)
 {
     int overlap = 0;
     int size_c;
     vector<HorizLine> combined_horiz_lines;
     for (auto horiz = horiz_lines.begin(); horiz != horiz_lines.end(); ++horiz) {
-        //cout << "horiz: " << (*horiz).y << endl;
         if (combined_horiz_lines.size() == 0) {
             combined_horiz_lines.push_back((*horiz));
             continue;
         }
         size_c = combined_horiz_lines.size();
-        //cout << "size of combined " << size_c << endl;
         for (int i = 0; i < size_c; ++i) {
+            // overlap only if y coordinates are the same
             if ((*horiz).y == combined_horiz_lines[i].y) {
                 overlap += max(0, min((*horiz).x2, combined_horiz_lines[i].x2) - max((*horiz).x1, combined_horiz_lines[i].x1));
                 if ((*horiz).x1 < combined_horiz_lines[i].x1) {
-                    //overlap += combined_horiz_lines[i].x1 - (*horiz).x1;
                     combined_horiz_lines[i].x1 = (*horiz).x1;
                 }
                 if ((*horiz).x2 > combined_horiz_lines[i].x2) {
-                    //overlap += (*horiz).x2 - combined_horiz_lines[i].x2;
                     combined_horiz_lines[i].x2 = (*horiz).x2;
                 }
             } else {
@@ -482,13 +433,12 @@ int calculate_horizontal_overlap(vector<HorizLine> &horiz_lines)
             }
         }
     }
-    cout << "horizontal overlap: " << overlap << endl;
+    if(VERBOSE_DEBUG) {cout << "horizontal overlap: " << overlap << endl;}
     return overlap;
 }
 
 
-
-
+// calculate Z1 overlap for collection of vertical and horizontal line segments
 int calculate_Z1(vector<VertLine> &vert_lines, vector<HorizLine> &horiz_lines)
 {
     int overlap = 0;
@@ -499,14 +449,16 @@ int calculate_Z1(vector<VertLine> &vert_lines, vector<HorizLine> &horiz_lines)
     return overlap;
 }
 
+// determine best orientation for producing most overlap for a Node
+// assign Node/parent edge to upper L
 void Node::calculate_upperL_overlap(vector<Node> &tree)
 {
     int c = children.size();
     int mask, child, child_x, child_y, overlap, Z1, Z2; 
+    // every possible orientation of children
     for (int i = 0; i < pow(2,c); ++i) {
         vector<VertLine> vert_lines;
         vector<HorizLine> horiz_lines;
-        // add parent/cur upper L 
         //cout << "parent (x,y) for tag " << tag << " {" << parent_x << ", " << parent_y << "}" << endl;
         add_UpperL_to_Line_vectors(vert_lines, horiz_lines, x, parent_x, y, parent_y);
         Z2 = 0;
@@ -516,36 +468,38 @@ void Node::calculate_upperL_overlap(vector<Node> &tree)
             child = children[j];
             child_x = children_x[j];
             child_y = children_y[j];
-            // fancy masking to get all orientations
+            // fancy masking to get orientation of child
             mask = i & (1<<j);
             if(mask == 0) { // lower L
-                cout << "Lower L " << i << ", " << j << endl;
+                if(VERBOSE_DEBUG) {cout << "Lower L " << i << ", " << j << endl;}
                 Z2 += tree[child].get_lower_Z();
                 add_LowerL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
             } else { // upper L
-                cout << "Upper L " << i << ", " << j << endl;
+                if(VERBOSE_DEBUG) {cout << "Upper L " << i << ", " << j << endl;}
                 Z2 += tree[child].get_upper_Z();
                 add_UpperL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
             }
             Z1 = calculate_Z1(vert_lines, horiz_lines);
             overlap = Z1 + Z2;
-            cout << "update upper: " << overlap << ", " << i << endl;
+            if(VERBOSE_DEBUG) {cout << "update upper: " << overlap << ", " << i << endl;}
             update_upper_Z(overlap, i);
         }
-        //DEBUG
-        cout << "UPPER iteration: " << i << ", best orientation: " << get_upper() << ", best Z: " << get_upper_Z() <<  endl << "--------------------------------" << endl;
+        if(VERBOSE_DEBUG) {cout << "UPPER iteration: " << i << ", best orientation: " << get_upper() << ", best Z: " << get_upper_Z() <<  endl << "--------------------------------" << endl;}
     }
 }
 
+
+// determine best orientation for producing most overlap for a Node
+// assign Node/parent edge to lower L
 void Node::calculate_lowerL_overlap(vector<Node> &tree)
 {
     int c = children.size();
     int mask, child, child_x, child_y, overlap, Z1, Z2;
+    // every possible orientation of children
     for (int i = 0; i < pow(2,c); ++i) {
         vector<VertLine> vert_lines;
         vector<HorizLine> horiz_lines;
-        // add parent/cur upper L 
-        cout << "parent (x,y) for tag " << tag << " {" << parent_x << ", " << parent_y << "}" << endl;
+        //cout << "parent (x,y) for tag " << tag << " {" << parent_x << ", " << parent_y << "}" << endl;
         add_LowerL_to_Line_vectors(vert_lines, horiz_lines, x, parent_x, y, parent_y);
         Z2 = 0;
 
@@ -557,32 +511,34 @@ void Node::calculate_lowerL_overlap(vector<Node> &tree)
             // fancy masking to get all orientations
             mask = i & (1<<j);
             if(mask == 0) { // lower L
-                cout << "Lower L " << i << ", " << j << endl;
+                if(VERBOSE_DEBUG) {cout << "Lower L " << i << ", " << j << endl;}
                 Z2 += tree[child].get_lower_Z();
                 add_LowerL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
             } else { // upper L
-                cout << "Upper L " << i << ", " << j << endl;
+                if(VERBOSE_DEBUG) {cout << "Upper L " << i << ", " << j << endl;}
                 Z2 += tree[child].get_upper_Z();
                 add_UpperL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
             }
             Z1 = calculate_Z1(vert_lines, horiz_lines);
             overlap = Z1 + Z2;
-            cout << "update lower: " << overlap << ", " << i << endl;
+            if(VERBOSE_DEBUG) {cout << "update lower: " << overlap << ", " << i << endl;}
             update_lower_Z(overlap, i);
         }
         //DEBUG
-        cout << "LOWER iteration: " << i << ", best orientation: " << get_lower() << ", best Z: " << get_lower_Z() <<  endl << "--------------------------------" << endl;
+        if(VERBOSE_DEBUG) {cout << "LOWER iteration: " << i << ", best orientation: " << get_lower() << ", best Z: " << get_lower_Z() <<  endl << "--------------------------------" << endl;}
     }
 }
 
-void Node::processRoot(vector<Node> &tree)
+// determine best orientation of children to produce most possible overlap in the tree
+// return reduction in wirelength
+int Node::processRoot(vector<Node> &tree)
 {
     int c = children.size();
     int mask, child, child_x, child_y, overlap, Z1, Z2; 
+    // for every possible orientation of children
     for (int i = 0; i < pow(2,c); ++i) {
         vector<VertLine> vert_lines;
         vector<HorizLine> horiz_lines;
-        // add parent/cur upper L 
         Z2 = 0;
 
         // add all lines
@@ -593,11 +549,11 @@ void Node::processRoot(vector<Node> &tree)
             // fancy masking to get all orientations
             mask = i & (1<<j);
             if(mask == 0) { // lower L
-                cout << "Lower L" << i << ", " << j << endl;
+                if(VERBOSE_DEBUG) {cout << "Lower L" << i << ", " << j << endl;}
                 Z2 += tree[child].get_lower_Z();
                 add_LowerL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
             } else { // upper L
-                cout << "Upper L" << i << ", " << j << endl;
+                if(VERBOSE_DEBUG) {cout << "Upper L" << i << ", " << j << endl;}
                 Z2 += tree[child].get_upper_Z();
                 add_UpperL_to_Line_vectors(vert_lines, horiz_lines, child_x, x, child_y, y);
             }
@@ -605,11 +561,17 @@ void Node::processRoot(vector<Node> &tree)
             overlap = Z1 + Z2;
             update_upper_Z(overlap, i); //using upper Z even though there is no parent 
         }
-        //DEBUG
-        cout << "ROOT iteration: " << i << ", best orientation: " << get_upper() << ", best Z: " << get_upper_Z() << endl << "--------------------------------" << endl;
+        if(VERBOSE_DEBUG) {cout << "ROOT iteration: " << i << ", best orientation: " << get_upper() << ", best Z: " << get_upper_Z() << endl << "--------------------------------" << endl;}
     }
+    if (DEBUG) {
+        cout << "--------------------------------" << endl;
+        cout << "ROOT: orientation = " << upper << ", Z = " << upper_Z << endl;
+        cout << "--------------------------------" << endl;
+    }
+    return upper_Z;
 }
 
+// run partial L-RST for a node
 void Node::partialLRST(vector<Node> &tree)
 {
     // skip bottom nodes
@@ -619,15 +581,17 @@ void Node::partialLRST(vector<Node> &tree)
 
         // lower L
         calculate_lowerL_overlap(tree);
-        cout << "--------------------------------" << endl;
-        cout << "UPPER: orientation = " << upper << ", Z = " << upper_Z << endl;
-        cout << "LOWER: orientation = " << lower << ", Z = " << lower_Z << endl;
-        cout << "--------------------------------" << endl;
+        if (DEBUG) {
+            cout << "--------------------------------" << endl;
+            cout << "UPPER: orientation = " << upper << ", Z = " << upper_Z << endl;
+            cout << "LOWER: orientation = " << lower << ", Z = " << lower_Z << endl;
+            cout << "--------------------------------" << endl;
+        }
     }
 
 }
 
-
+// generate a vector of nodes that represent the minimum spanning tree
 void createTree(vector<Node> &tree, int parent_nodes[], int child_nodes[], int x[], int y[], int N)
 {
     // each vector index is a Node object
@@ -655,8 +619,9 @@ void createTree(vector<Node> &tree, int parent_nodes[], int child_nodes[], int x
     return;
 }
 
-
-void calculateOverlapBottomUp(vector<Node> &tree, int N)
+// traverse the tree bottom up to determine best gain possible from overlap
+// return total overlap
+int calculateOverlapBottomUp(vector<Node> &tree, int N)
 {
     stack<int> node_stack;
     int nodesProcessed = 0;
@@ -671,9 +636,9 @@ void calculateOverlapBottomUp(vector<Node> &tree, int N)
         if(next_node == -1) {
             node_stack.pop(); 
             nodesProcessed++;
-            cout << "-------------------------------" << endl;
-            cout << "popping: " << current_node << "...Nodes processed: " << nodesProcessed << endl;
-            cout << "-------------------------------" << endl;
+            if(DEBUG) {
+                cout << "-------------------------------" << endl << "popping: " << current_node << "...Nodes processed: " << nodesProcessed << endl << "-------------------------------" << endl;
+            }
             tree[current_node].partialLRST(tree);
         } else {
             //cout << "next node is: " << next_node << endl;
@@ -681,19 +646,22 @@ void calculateOverlapBottomUp(vector<Node> &tree, int N)
         }
     }
     cout << "processing root node..." << endl;
-    tree[0].processRoot(tree);
-    // DEBUG
-    for (int a = 0; a < N; ++a) {
-        cout << "INDEX: " << a << "----------upper Z: " << tree[a].get_upper_Z() << "...lower Z: " << tree[a].get_lower_Z() << "----------" << endl;
-        cout << "upper orientation: " << tree[a].get_upper() << "...lower orientation: " << tree[a].get_lower() << endl;
+    int wirelength_reduction = tree[0].processRoot(tree);
+    if(VERBOSE_DEBUG) {
+        for (int a = 0; a < N; ++a) {
+            cout << "INDEX: " << a << " ----------upper Z: " << tree[a].get_upper_Z() << "...lower Z: " << tree[a].get_lower_Z() << "----------" << endl;
+            cout << "upper orientation: " << tree[a].get_upper() << "...lower orientation: " << tree[a].get_lower() << endl;
+        }
     }
+    return wirelength_reduction;
 }
 
+// set upper or lower orientation for L formed by parent and child node
 int setChildOrientation(vector<Node> &tree, int parent_node, int child_index, int isUpper)
 {
     int orientation = (isUpper) ? tree[parent_node].get_upper() : tree[parent_node].get_lower();
     int masked = orientation & (1<<child_index);
-    cout << "orientation: " << orientation << "...mask: " << masked << endl;
+    if(VERBOSE_DEBUG) {cout << "orientation: " << orientation << "...mask: " << masked << endl;}
     if (masked == 0) {
         return 0; // lower
     } else { 
@@ -702,6 +670,7 @@ int setChildOrientation(vector<Node> &tree, int parent_node, int child_index, in
 
 }
 
+// traverse tree top --> down to assign upper/lower to all edges in tree
 void assign_Ls_top_down(vector<Node> &tree, int L_assignments[], int N)
 {
     int numberAssigned = 1;
@@ -716,10 +685,6 @@ void assign_Ls_top_down(vector<Node> &tree, int L_assignments[], int N)
     for(int i = 0; i<N; ++i) 
         tree[i].reset_child_pointer();
 
-    //DEBUG 
-    for (int aa = 0; aa<N; ++aa) {
-        cout << "index: " << aa << "...upper: " << tree[aa].get_upper() << "...lower: " << tree[aa].get_lower() << endl;
-    }
     while (numberAssigned < N) {
         current_node = top_down_stack.top();    
         next_node = tree[current_node].pick_next_child();
@@ -730,7 +695,7 @@ void assign_Ls_top_down(vector<Node> &tree, int L_assignments[], int N)
             isUpper = L_assignments[top_down_stack.top()];
         } else {
             numberAssigned++;
-            cout << "nodes assigned: " << numberAssigned << endl;
+            if(VERBOSE_DEBUG) {cout << "nodes assigned: " << numberAssigned << endl;}
             child_index = (tree[current_node].get_child_pointer()) - 1;
             //cout << "Child indx: " << child_index << endl;
             int temp = setChildOrientation(tree, current_node, child_index, isUpper);
@@ -741,6 +706,10 @@ void assign_Ls_top_down(vector<Node> &tree, int L_assignments[], int N)
     }
 }
 
+// write results of LRST to file
+// line format: parent child orientation
+// orientation is 1 for upper, 0 for lower
+// root parent is -1
 void writeLRSTResults(int L[], int parent_nodes[], int child_nodes[], int N)
 {
     ofstream results;
@@ -752,524 +721,31 @@ void writeLRSTResults(int L[], int parent_nodes[], int child_nodes[], int N)
 
 }
 
-void runLRST(int *graph_D, int *graph_y, int *graph_x, int x[], int y[], int parent_nodes[], int child_nodes[], int N)
+// run L-RST Algorithm
+// return overlap
+int runLRST(int *graph_D, int *graph_y, int *graph_x, int x[], int y[], int parent_nodes[], int child_nodes[], int N)
 {
     // initialize tree
     vector<Node> tree;
-    cout << "--- creating tree / nodes ---" << endl;
+    if(DEBUG) {cout << "--- creating tree / nodes ---" << endl;}
     createTree(tree, parent_nodes, child_nodes, x, y, N); 
 
-    cout << "--- calculating overlap ---" << endl;
-    calculateOverlapBottomUp(tree, N);
+    if(DEBUG) {cout << "--- calculating overlap ---" << endl;}
+    int overlap = calculateOverlapBottomUp(tree, N);
 
     int L_assignments[N]; // for each index, 0 is lower, 1 is upper
     L_assignments[0] = 1;
-    cout << endl << "--- assigning Ls top --> down ---" << endl << endl;
+    if(DEBUG) {cout << endl << "--- assigning Ls top --> down ---" << endl << endl;}
     assign_Ls_top_down(tree, L_assignments, N);
 
-    //DEBUG
-    for (int i = 0; i < N; ++i)
-        cout << "i: " << i << ", L assigned: " << L_assignments[i] << endl;
+    if(DEBUG) {
+        for (int i = 0; i < N; ++i)
+            cout << "i: " << i << ", L assigned: " << L_assignments[i] << endl;
+    }
     writeLRSTResults(L_assignments, parent_nodes, child_nodes, N);
-    return;
+    return overlap;
 }
 
-
-
-int steinerCalculation(int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts, int bottom, int middle, int top)  {
-
-    // function needs to return the proper orientation of connections between nodes
-    // 1 = lower for bottom connection, lower for upper connection
-    // 2 = lower for bottom connection, upper for upper connection
-    // 3 = upper for bottom connection, lower for upper connection
-    // 4 = upper for bottom connection, upper for upper connection
-
-    int V1X, V1Y, V2X, V2Y;
-    bool llOverlap = false, luOverlap = false, ulOverlap = false, uuOverlap = false;
-    int value;
-
-    //------------------------------------------------------------------------------------------
-    // LOWER, LOWER
-
-    if (*(x_pts + bottom) < *(x_pts + middle) && *(y_pts + bottom) > *(y_pts + middle)) {
-        V1X = *(x_pts + bottom);
-        V1Y = *(y_pts + middle);
-    } else if (*(x_pts + bottom) < *(x_pts + middle) && *(y_pts + bottom) < *(y_pts + middle)) {
-        V1X = *(x_pts + middle);
-        V1Y = *(y_pts + bottom);
-    } else if (*(x_pts + bottom) > *(x_pts + middle) && *(y_pts + bottom) > *(y_pts + middle)) {
-        V1X = *(x_pts + bottom);
-        V1Y = *(y_pts + middle);
-    } else if (*(x_pts + bottom) > *(x_pts + middle) && *(y_pts + bottom) < *(y_pts + middle)) {
-        V1X = *(x_pts + middle);
-        V1Y = *(y_pts + bottom);
-    }
-
-    if (*(x_pts + middle) < *(x_pts + top) && *(y_pts + middle) > *(y_pts + top)) {
-        V2X = *(x_pts + middle);
-        V2Y = *(y_pts + top);
-    } else if (*(x_pts + middle) < *(x_pts + top) && *(y_pts + middle) < *(y_pts + top)) {
-        V2X = *(x_pts + top);
-        V2Y = *(y_pts + middle);
-    } else if (*(x_pts + middle) > *(x_pts + top) && *(y_pts + middle) > *(y_pts + top)) {
-        V2X = *(x_pts + middle);
-        V2Y = *(y_pts + top);
-    } else if (*(x_pts + middle) > *(x_pts + top) && *(y_pts + middle) < *(y_pts + top)) {
-        V2X = *(x_pts + top);
-        V2Y = *(y_pts + middle);
-    }
-
-    cout << V1X << V1Y << V2X << V2Y << *(x_pts + middle) << *(y_pts + middle) << endl;
-
-    if (V1X == V2X) {
-        llOverlap = true;
-    }
-
-    //------------------------------------------------------------------------------------------
-
-    //------------------------------------------------------------------------------------------
-    // LOWER, UPPER
-
-    if (*(x_pts + bottom) < *(x_pts + middle) && *(y_pts + bottom) > *(y_pts + middle)) {
-        V1X = *(x_pts + bottom);
-        V1Y = *(y_pts + middle);
-    } else if (*(x_pts + bottom) < *(x_pts + middle) && *(y_pts + bottom) < *(y_pts + middle)) {
-        V1X = *(x_pts + middle);
-        V1Y = *(y_pts + bottom);
-    } else if (*(x_pts + bottom) > *(x_pts + middle) && *(y_pts + bottom) > *(y_pts + middle)) {
-        V1X = *(x_pts + bottom);
-        V1Y = *(y_pts + middle);
-    } else if (*(x_pts + bottom) > *(x_pts + middle) && *(y_pts + bottom) < *(y_pts + middle)) {
-        V1X = *(x_pts + middle);
-        V1Y = *(y_pts + bottom);
-    }
-
-    if (*(x_pts + middle) < *(x_pts + top) && *(y_pts + middle) > *(y_pts + top)) {
-        V2X = *(x_pts + top);
-        V2Y = *(y_pts + middle);
-    } else if (*(x_pts + middle) < *(x_pts + top) && *(y_pts + middle) < *(y_pts + top)) {
-        V2X = *(x_pts + middle);
-        V2Y = *(y_pts + top);
-    } else if (*(x_pts + middle) > *(x_pts + top) && *(y_pts + middle) > *(y_pts + top)) {
-        V2X = *(x_pts + top);
-        V2Y = *(y_pts + middle);
-    } else if (*(x_pts + middle) > *(x_pts + top) && *(y_pts + middle) < *(y_pts + top)) {
-        V2X = *(x_pts + middle);
-        V2Y = *(y_pts + top);
-    }
-
-    cout << V1X << V1Y << V2X << V2Y << *(x_pts + middle) << *(y_pts + middle) << endl;
-
-    if (V1Y == V2Y) {
-        luOverlap = true;
-    }
-
-    //------------------------------------------------------------------------------------------
-
-    //------------------------------------------------------------------------------------------
-    // UPPER, LOWER
-
-    if (*(x_pts + bottom) < *(x_pts + middle) && *(y_pts + bottom) > *(y_pts + middle)) {
-        V1X = *(x_pts + middle);
-        V1Y = *(y_pts + bottom);
-    } else if (*(x_pts + bottom) < *(x_pts + middle) && *(y_pts + bottom) < *(y_pts + middle)) {
-        V1X = *(x_pts + bottom);
-        V1Y = *(y_pts + middle);
-    } else if (*(x_pts + bottom) > *(x_pts + middle) && *(y_pts + bottom) > *(y_pts + middle)) {
-        V1X = *(x_pts + middle);
-        V1Y = *(y_pts + bottom);
-    } else if (*(x_pts + bottom) > *(x_pts + middle) && *(y_pts + bottom) < *(y_pts + middle)) {
-        V1X = *(x_pts + bottom);
-        V1Y = *(y_pts + middle);
-    }
-
-    if (*(x_pts + middle) < *(x_pts + top) && *(y_pts + middle) > *(y_pts + top)) {
-        V2X = *(x_pts + middle);
-        V2Y = *(y_pts + top);
-    } else if (*(x_pts + middle) < *(x_pts + top) && *(y_pts + middle) < *(y_pts + top)) {
-        V2X = *(x_pts + top);
-        V2Y = *(y_pts + middle);
-    } else if (*(x_pts + middle) > *(x_pts + top) && *(y_pts + middle) > *(y_pts + top)) {
-        V2X = *(x_pts + middle);
-        V2Y = *(y_pts + top);
-    } else if (*(x_pts + middle) > *(x_pts + top) && *(y_pts + middle) < *(y_pts + top)) {
-        V2X = *(x_pts + top);
-        V2Y = *(y_pts + middle);
-    }
-
-    cout << V1X << V1Y << V2X << V2Y << *(x_pts + middle) << *(y_pts + middle) << endl;
-
-    if (V1Y == V2Y) {
-        ulOverlap = true;
-    }
-
-    //------------------------------------------------------------------------------------------
-
-    //------------------------------------------------------------------------------------------
-    // UPPER, UPPER
-
-    if (*(x_pts + bottom) < *(x_pts + middle) && *(y_pts + bottom) > *(y_pts + middle)) {
-        V1X = *(x_pts + middle);
-        V1Y = *(y_pts + bottom);
-    } else if (*(x_pts + bottom) < *(x_pts + middle) && *(y_pts + bottom) < *(y_pts + middle)) {
-        V1X = *(x_pts + bottom);
-        V1Y = *(y_pts + middle);
-    } else if (*(x_pts + bottom) > *(x_pts + middle) && *(y_pts + bottom) > *(y_pts + middle)) {
-        V1X = *(x_pts + middle);
-        V1Y = *(y_pts + bottom);
-    } else if (*(x_pts + bottom) > *(x_pts + middle) && *(y_pts + bottom) < *(y_pts + middle)) {
-        V1X = *(x_pts + bottom);
-        V1Y = *(y_pts + middle);
-    }
-
-    if (*(x_pts + middle) < *(x_pts + top) && *(y_pts + middle) > *(y_pts + top)) {
-        V2X = *(x_pts + top);
-        V2Y = *(y_pts + middle);
-    } else if (*(x_pts + middle) < *(x_pts + top) && *(y_pts + middle) < *(y_pts + top)) {
-        V2X = *(x_pts + middle);
-        V2Y = *(y_pts + top);
-    } else if (*(x_pts + middle) > *(x_pts + top) && *(y_pts + middle) > *(y_pts + top)) {
-        V2X = *(x_pts + top);
-        V2Y = *(y_pts + middle);
-    } else if (*(x_pts + middle) > *(x_pts + top) && *(y_pts + middle) < *(y_pts + top)) {
-        V2X = *(x_pts + middle);
-        V2Y = *(y_pts + top);
-    }
-
-    cout << V1X << V1Y << V2X << V2Y << *(x_pts + middle) << *(y_pts + middle) << endl;
-
-    if (V1X == V2X) {
-        cout << "yo" << endl;
-        uuOverlap = true;
-    }
-    
-    if (llOverlap) {
-        value = 1;
-        totalOverlap++;
-    } else if (luOverlap) {
-        value = 2;
-        totalOverlap++;
-    } else if (ulOverlap) {
-        value = 3;
-        totalOverlap++;
-    } else if (uuOverlap) {
-        value = 4;
-        totalOverlap++;
-    } else {
-        value = 5;
-    }
-
-    cout << "VAAAALLLLLLUUUUUEEEEEEEEEE: " << value << endl;
-    cout << llOverlap << luOverlap << ulOverlap << uuOverlap << endl;
-
-    return value;
-}
-
-void runSteiner(int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts, int parent_nodes[], int child_nodes[], int N) {
-    // First, we need to identify the nodes with more than one child and their children
-    int orientation = 0;
-
-    bool parents[N]; // will keep parents
-    bool seen[N];
-
-    for (int l = 0; l < N; l++) {
-        parents[l] = false;
-        seen[N] = false;
-    }
-
-    // parent_nodes has a list of all potential parents
-
-    int potentialParent;
-    int parentCounter = 0; // if this is greater than 1, then that node has a parent with atleast 2 children
-    int counter = 0;
-    int frequency[N];
-    for (int i = 0; i < N; i++) {
-
-        //first, get a potential parent
-        potentialParent = i;
-
-        //cout << "potential: " << potentialParent << endl;
-
-        // now, we need to see how any times this parent has appeared
-
-        for (int j = 0; j < N; j++) {
-            if (potentialParent == parent_nodes[j]) {
-                parentCounter++;
-            }
-        }
-
-        //cout << "counter: " << parentCounter << endl;
-        frequency[i] = parentCounter;
-
-        if (parentCounter > 1) {
-            parents[i] =  true;
-        }
-        parentCounter = 0;
-    }
-
-    for (int y = 0; y < N; y++) {
-        cout << "counter: " << frequency[y] << endl;
-    }
-
-    int sortedChildren[N];
-    int sortedParents[N];
-
-    for (int i = 0; i < N; i++) {
-        // i is the index of sorted children
-        for (int j = 0; j < N; j++) {
-            if (i == child_nodes[j]) {
-                sortedParents[i] = parent_nodes[j];
-
-            }
-        }
-    }
-
-    int edgesDone = 0;
-    int middleNode;
-    int topNode;
-    //int direction[N - 1];
-    counter = 0;
-
-    for (int i = 0; i < N; i++) {
-        sortedChildren[i] = 0;
-    }
-
-    int maxChildren = 0;
-
-    for (int i = 0; i < N; i++) {
-        if (frequency[i] > maxChildren) {
-            maxChildren = frequency[i];
-        }
-    }
-
-    // begin bottom up traversal
-
-    // we need a starting point
-
-    int startingNode;
-    int parentOfStartingNode;
-
-    int numberConnected[N];
-    bool parentFound = false;
-    int nextTop;
-    bool rootConnected = false;
-    int direction[N];
-    int sortedDirections[N];
-    int potentialStart;
-    int potentialMiddle;
-    bool failedFirstTest;
-    bool failedSecondTest;
-
-    for (int i = 0; i < N; i++) {
-        numberConnected[i] = 0;
-        direction[i] = 0;
-        sortedDirections[i] = 0;
-    }
-    while (!rootConnected) {
-        for (int i = 0; i < N; i++) {
-            if (numberConnected[0] == frequency[0]) {
-                // root node calculations
-                rootConnected = true;
-                cout << "ROOT" << endl;
-                break;
-            }
-
-            parentFound = false;
-            
-
-            failedFirstTest = false;
-            failedSecondTest = false;
-
-            cout << "This is a potential starting point: " << potentialStart << endl;
-            cout << "This is a potential middle point: " << potentialMiddle << endl;
-
-
-            if (frequency[potentialStart] != numberConnected[potentialStart]) { // parent's children arent all connected
-                //cout << "Potential Start: " << potentialStart << endl;
-                //cout << "Potential Middle: " << potentialMiddle << endl;
-                failedFirstTest = true;
-                cout << "Failed 1st test" << endl;
-            } else {
-                cout << "Passed 1st test" << endl;
-            }
-
-
-            // need to see if there is or isnt a connection above the starting node
-            // if there is, then the test fails
-            // if there isn't, then you pass
-
-            if (sortedDirections[potentialStart] == 0) {
-                cout << "Passed 2nd test" << endl;
-            } else {
-                failedSecondTest = true;
-                cout << "Failed 2nd test" << endl;
-            }
-
-            if (failedFirstTest || failedSecondTest) {
-                // the potential starting point is not valid
-                // look for another one
-                continue;
-            } else {
-                // we now a real starting point and end point
-                startingNode = potentialStart;
-                // starting node = all the children are connected and no connection right above
-                middleNode = potentialMiddle;
-                cout << "This is an actual starting point: " << startingNode << endl;
-                cout << "This is an actual middle point: " << middleNode << endl;
-            }
-
-            //------------------------------------------------------------
-
-            // we now have a starting point
-            // we have to go up this branch until we've reached a parent
-
-            // Remember: BOTTOM UP TRAVERSAL
-
-            // check to see if the middle node is a parent
-            if (frequency[middleNode] > 1) {
-                // we know middle node is a parent
-                cout << "This is case h and i: " << startingNode << endl;
-                cout << "This is case h and i: " << middleNode << endl;
-                //function call
-                //needs to return the direction
-
-                numberConnected[middleNode]++;
-                sortedDirections[startingNode] = 1;
-            } else {
-                // the middle node just has 1 child
-                topNode = sortedParents[middleNode];
-
-                if (frequency[topNode] > 1) {
-                    // middle: 1 child
-                    // top: > 1 child
-                    // case d, e, f, and g
-                    cout << "This is case d, e, f, and g: " << startingNode << endl;
-                    cout << "This is case d, e, f, and g: " << middleNode << endl;
-                    cout << "This is case d, e, f, and g: " << topNode << endl;
-                    //function call
-                    orientation = steinerCalculation(graph_D, graph_y, graph_x, x_pts, y_pts, startingNode, middleNode, topNode);
-                    if (orientation == 1) {
-                        sortedDirections[startingNode] = 1;
-                        sortedDirections[middleNode] = 1;
-                    } else if (orientation == 2) {
-                        sortedDirections[startingNode] = 1;
-                        sortedDirections[middleNode] = 2;
-                    } else if (orientation == 3) {
-                        sortedDirections[startingNode] = 2;
-                        sortedDirections[middleNode] = 1;
-                    } else if (orientation == 4) {
-                        sortedDirections[startingNode] = 2;
-                        sortedDirections[middleNode] = 2;
-                    } else {
-                        sortedDirections[startingNode] = 3;
-                        sortedDirections[middleNode] = 3;
-                    }
-                    numberConnected[middleNode]++;
-                    numberConnected[topNode]++;
-                    //sortedDirections[startingNode] = 1;
-                    //sortedDirections[middleNode] = 1;
-                } else {
-                    // middle: 1 child
-                    // top: 1 child
-                    cout << "This is case a, b, and c: " << startingNode << endl;
-                    cout << "This is case a, b, and c: " << middleNode << endl;
-                    cout << "This is case a, b, and c: " << topNode << endl;
-                    //function call
-
-                    if (frequency[startingNode] == 0) {
-                        orientation = steinerCalculation(graph_D, graph_y, graph_x, x_pts, y_pts, startingNode, middleNode, topNode);
-                    } else {
-                        // do this calculation (not in the slides)
-                        //orientation = steiner2(graph_D, graph_y, graph_x, x_pts, y_pts, startingNode, middleNode, topNode, parent_nodes, child_nodes, sortedDirections, N);
-                    }
-
-                    orientation = steinerCalculation(graph_D, graph_y, graph_x, x_pts, y_pts, startingNode, middleNode, topNode);
-
-                    if (orientation == 1) {
-                        sortedDirections[startingNode] = 1;
-                        sortedDirections[middleNode] = 1;
-                    } else if (orientation == 2) {
-                        sortedDirections[startingNode] = 1;
-                        sortedDirections[middleNode] = 2;
-                    } else if (orientation == 3) {
-                        sortedDirections[startingNode] = 2;
-                        sortedDirections[middleNode] = 1;
-                    } else if (orientation == 4) {
-                        sortedDirections[startingNode] = 2;
-                        sortedDirections[middleNode] = 2;
-                    } else {
-                        sortedDirections[startingNode] = 3;
-                        sortedDirections[middleNode] = 3;
-                    }
-
-                    numberConnected[middleNode] = 1;
-                    numberConnected[topNode] = 1;
-                    //sortedDirections[startingNode] = 1;
-                    //sortedDirections[middleNode] = 1;
-                }
-            }
-
-            for (int k = 0; k < N; k++) {
-                cout << "Number Connected: " << numberConnected[k] << endl;
-            }
-
-            for (int k = 0; k < N; k++) {
-                cout << "Sorted Directions: " << sortedDirections[k] << endl;
-            }
-
-
-
-        }
-
-    }
-
-    // Need to put sortedDirections in correct place of directions
-
-    int directions[N];
-
-    for (int i = 0; i < N; i++) {
-        directions[i] = sortedDirections[child_nodes[i]]; 
-    }
-
-    cout << "DIRECTIONS" << endl;
-
-    for (int p = 0; p < N; p++) {
-        cout << directions[p] << endl;
-    }
-        
-}
-
-int steiner2(int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts, int bottom, int middle, int top, int parent_nodes[], int child_nodes[], int sortedDirections[], int N) {
-    // with this function, the starting node has atleast 1 child
-    // bottom: atleast 1 child
-    // middle: 1 child
-    // top: 1 child
-
-    int bottomDirection = 0;
-    for (int i = 0; i < N; i++) {
-        if (child_nodes[i] == bottom) {
-            bottomDirection = sortedDirections[child_nodes[i]];
-        }
-    }
-    return 0;
-}
-
-int steiner3(int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts, int bottom, int middle) {
-    // need to find connection between bottom and middle
-
-    // first, fix the connecton between bottom and middle to lower
-
-    int connection  = 0;
-
-    // get the vertex between the 2 points for an upper connection
-    int VX = *(x_pts + bottom);
-    int VY = *(y_pts + middle);
-
-    // we now have to solve for Z(T df)
-    return 0;
-
-
-}
 
 int calculateWL(int parent_nodes[], int child_nodes[], int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts, int N) {
     int wireLength = 0;
@@ -1284,12 +760,11 @@ int calculateWL(int parent_nodes[], int child_nodes[], int *graph_D, int *graph_
         wireLength += distance;
     }
 
-    cout << "Length: " << wireLength << endl;
-
     return wireLength;
 }
 
 
+// parse input file to get x and y coordinates for each node
 void parseFile(int *x, int *y, int N, const char filename[]) 
 {
     ifstream benchmark(filename, ios::in);
@@ -1303,6 +778,7 @@ void parseFile(int *x, int *y, int N, const char filename[])
     return;
 }
 
+// get number of nodes in benchmark by parsing filename
 int getNumNodes(std::string filepath)
 {
     cout << "FILE: " << filepath << endl;
@@ -1317,6 +793,7 @@ int getNumNodes(std::string filepath)
 }
 
 
+// write filename of benchmark to file to be used by python plotter
 void exportFilename(const char *filename)
 {
     ofstream results;
@@ -1327,30 +804,43 @@ void exportFilename(const char *filename)
 
 }
 
+
+// write wirelength results to file
+void writeWirelengths(int mst, int lrst, int kr)
+{
+    ofstream results;
+    results.open("wirelenghtResults.txt");
+    results << "MST: " << mst << endl;
+    results << "LRST: " << lrst << endl;
+    results << "KR: " << kr << endl;
+    results.close();
+    return;
+
+}
 int main(int argc, char** argv)
 {
-    cout << argv[1] << endl;
     const char *filename = argv[1];
     std::string temp_filename = argv[1];
    
     int N = getNumNodes(temp_filename);
+    exportFilename(filename);
 
     cout << "NUM NODES: " << N << endl;
+
     // N is number of nodes in graph
-    //const int N = SIZE;
+    // x and y coordinates for nodes
     int x[N];
     int y[N];
     
     parseFile(x, y, N, filename);
-
-    exportFilename(filename);
     
-    // Print for debug
+    /*
     if (DEBUG) {
         for (int i = 0; i < N; ++i) {
             cout << x[i] << ", " << y[i] << endl;
         }
     } 
+    */
 
     // init graphs for Manhattan Distance, y difference, and x maximum
     int graph_D[N][N];
@@ -1360,24 +850,40 @@ int main(int argc, char** argv)
     int parent_nodes[N];
     int child_nodes[N];
 
+    
+    clock_t c_start = clock();
+
+    cout << endl << "============== Create Weight Graph =================" << endl << endl;
     // create 2D arrays with values for Prim
     createWeightGraphs(*graph_D, *graph_y, *graph_x, x, y, N); 
+
     // Run Prim's Algorithm
     cout << endl << "============== Generating MST =================" << endl << endl;
     runPrim(*graph_D, *graph_y, *graph_x, parent_nodes, child_nodes, N);
 
     // Run L-RST Algorithm
     cout << endl << "============== Running L-RST =================" << endl << endl;
-    runLRST(*graph_D, *graph_y, *graph_x, x, y, parent_nodes, child_nodes, N);
-    //used for testing
-    //steinerCalculation(*graph_D, *graph_y, *graph_x, x, y, 5, 6, 7);
+    int overlap_LRST = runLRST(*graph_D, *graph_y, *graph_x, x, y, parent_nodes, child_nodes, N);
 
-    // Run Steiner Algorithm
-    //runSteiner(*graph_D, *graph_y, *graph_x, x, y, parent_nodes, child_nodes, N);
+    // Run Kahng / Robins Algorithm 
+    // TODO 
 
-    calculateWL(parent_nodes, child_nodes, *graph_D, *graph_y, *graph_x, x, y, N);
+    // calculate Wirelength
+    int origWL = calculateWL(parent_nodes, child_nodes, *graph_D, *graph_y, *graph_x, x, y, N);
+    int LRST_WL = origWL - overlap_LRST;
+    int KR_WL = 0; // TODO - update this 
 
-    cout << "Overlap Total: " << totalOverlap << endl;
-    
+    writeWirelengths(origWL, LRST_WL, KR_WL);
+
+    clock_t c_end = clock();
+    double time_elapsed_ms = 1000.0 * (c_end-c_start) / CLOCKS_PER_SEC; 
+    cout << "===================================" << endl;
+    cout << "Original Wirelength: " << origWL << endl;
+    cout << "Wirelength after L-RST: " << LRST_WL << endl;
+    cout << "CPU time used: " << time_elapsed_ms / 1000.0 << " s\n";
+    cout << "===================================" << endl;
+
+
+
     return 0;
 }
