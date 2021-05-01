@@ -101,11 +101,11 @@ def plot_LRST(file_pts, file_lrst, ax):
 def get_grid_size(file_pts):
     end_ind = file_pts.rfind('_')
     first_ind = file_pts[:end_ind].rfind('_')
-    grid_size = int(file_pts[first_ind+1:end_ind])
+    grid_size = int(file_pts[first_ind+1:end_ind]) + 1
     return grid_size
 
 # TODO add plots for L-RST and Kahng/Robins
-def generate_plots(file_pts, file_mst, file_lrst):
+def generate_plots(file_pts, file_mst, file_lrst, file_wirelengths):
     # initialize plots
     fig, ax = plt.subplots(1,3)
     grid_size = get_grid_size(file_pts)
@@ -115,12 +115,15 @@ def generate_plots(file_pts, file_mst, file_lrst):
     ax[2].set_title("Final Kahng/Robins")
     
     # MST
+    ax[0].grid()
     ax[0] = plot_MST(file_pts, file_mst, ax[0])
-    ax[1] = plot_LRST(file_pts, file_lrst, ax[1])
 
     # L-RST
+    ax[1].grid()
+    ax[1] = plot_LRST(file_pts, file_lrst, ax[1])
 
     # Kahng/Robins
+    ax[2].grid()
 
 
     plt.show()
@@ -131,4 +134,4 @@ if __name__ == "__main__":
         points_file = f.readline()
 
     print(points_file)
-    generate_plots(points_file, "primResults.txt", "LRSTResults.txt")
+    generate_plots(points_file, "primResults.txt", "LRSTResults.txt", "wirelengthResults.txt")
