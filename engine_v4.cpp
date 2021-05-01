@@ -861,12 +861,16 @@ int main(int argc, char** argv)
     cout << endl << "============== Generating MST =================" << endl << endl;
     runPrim(*graph_D, *graph_y, *graph_x, parent_nodes, child_nodes, N);
 
+    clock_t c_endPrim = clock();
     // Run L-RST Algorithm
     cout << endl << "============== Running L-RST =================" << endl << endl;
     int overlap_LRST = runLRST(*graph_D, *graph_y, *graph_x, x, y, parent_nodes, child_nodes, N);
 
+    clock_t c_endLRST = clock();
     // Run Kahng / Robins Algorithm 
     // TODO 
+
+    clock_t c_endKR = clock();
 
     // calculate Wirelength
     int origWL = calculateWL(parent_nodes, child_nodes, *graph_D, *graph_y, *graph_x, x, y, N);
@@ -877,10 +881,16 @@ int main(int argc, char** argv)
 
     clock_t c_end = clock();
     double time_elapsed_ms = 1000.0 * (c_end-c_start) / CLOCKS_PER_SEC; 
+    double time_elapsed_MST_ms = 1000.0 * (c_endPrim - c_start) / CLOCKS_PER_SEC; 
+    double time_elapsed_LRST_ms = 1000.0 * (c_endLRST - c_endPrim) / CLOCKS_PER_SEC; 
+    double time_elapsed_KR_ms = 1000.0 * (c_endKR - c_endLRST) / CLOCKS_PER_SEC; 
     cout << "===================================" << endl;
     cout << "Original Wirelength: " << origWL << endl;
     cout << "Wirelength after L-RST: " << LRST_WL << endl;
-    cout << "CPU time used: " << time_elapsed_ms / 1000.0 << " s\n";
+    cout << "Wirelength after Kahng / Robins: " << KR_WL << endl;
+    cout << "CPU time used for generating MST: " << time_elapsed_MST_ms / 1000.0 << " s\n";
+    cout << "CPU time used for running L-RST: " << time_elapsed_LRST_ms / 1000.0 << " s\n";
+    cout << "CPU time used for running Kahng / Robins: " << time_elapsed_KR_ms / 1000.0 << " s\n";
     cout << "===================================" << endl;
 
 
