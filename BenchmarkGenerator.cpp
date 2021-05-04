@@ -7,32 +7,16 @@
 #include <ctime>
 #include <time.h>
 #include <vector>
-
+#include <cstdlib>
 using namespace std;
 
 
 int main() {
     srand(time(NULL));
-    int goalNumberOfPoints = 3000;
     int uniquePoints = 0;
-    int gridSize = 100;
+    int goalNumberOfPoints  = (rand() % (500 + 1 - 100)) + 100;
+    int gridSize = goalNumberOfPoints * 0.3;
 
-    /*
-    ofstream results;
-    results.open("points_" + to_string(gridSize) + "_" + to_string(numberOfPoints) + ".pts");
-
-    for (int i = 0; i < numberOfPoints; i++) {
-        int randomX = rand() % gridSize + 1;
-        int randomY = rand() % gridSize + 1;
-        if (i == numberOfPoints - 1) {
-            results << to_string(randomX) << " " << to_string(randomY);
-        } else {
-            results << to_string(randomX) << " " << to_string(randomY) << endl;
-        }
-    }
-
-    results.close();
-    */
     int test = 5;
     vector<int> initialX;
     vector<int> initialY;
@@ -41,12 +25,8 @@ int main() {
     bool duplicate = false;
 
     while (uniquePoints < goalNumberOfPoints) {
-        cout << "New Point" << endl;
         int randomX = rand() % gridSize + 1;
         int randomY = rand() % gridSize + 1;
-
-        cout << "X: " << randomX << ", Y: " << randomY << endl;
-        cout << "Number of points: " << uniquePoints << endl;
 
         // need to see if these are within range and are not duplicate
 
@@ -79,12 +59,6 @@ int main() {
             duplicate = false;
         }
 
-    }
-
-    cout << uniquePoints << endl;
-
-    for (int i = 0; i < uniquePoints; i++) {
-        cout << "I: " << i << ", X: " << finalX[i] << ", Y: " << finalY[i] << endl;
     }
 
     ofstream results;

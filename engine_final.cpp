@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <string.h>
@@ -9,6 +10,9 @@
 #include <math.h>
 #include <algorithm> //for min/max
 #include <ctime>
+#include <chrono>
+
+#define CLOCKS_PER_MS (CLOCKS_PER_SEC / 1000.00)
 
 
 using namespace std;
@@ -800,16 +804,16 @@ int steinerWL(int parent_nodes[], int child_nodes[], int gridSize) {
         int currentParent = parent_nodes[i];
         int currentChild = child_nodes[i];
         if (parent_nodes[i] == 0 && parent_nodes[i + 1] == 0) {
-            break;
+            break; // end of array
         }
-        for (int j = 0; j < i; j++) {
+        for (int j = 0; j < i; j++) { // need to check for duplicate connections
             if ((currentParent == parent_nodes[j] && currentChild == child_nodes[j]) || (currentParent == child_nodes[j] && currentChild == parent_nodes[j])) {
-                duplicate = true;
+                duplicate = true; // duplicate connection has been found
                 break;
             }
         }
         if (duplicate) {
-            duplicate = false;
+            duplicate = false; // dont count the duplicate's wirelength
             continue;
         } else {
             int parentY = currentParent / (gridSize + 1);
@@ -850,24 +854,24 @@ int getGraph(int currentGridParents[], int currentGridChildren[], int potentialS
         int childX = currentGridChildren[i] - (childY*gridSize + childY);
         int steinerY = potentialSteiner / (gridSize + 1);
         int steinerX = potentialSteiner - (steinerY*gridSize + steinerY);
-        int currentEdge = abs(parentY - childY) + abs(parentX - childX);
-        int newEdge1 = abs(parentY - steinerY) + abs(parentX - steinerX);
-        int newEdge2 = abs(childY - steinerY) + abs(childX - steinerX);
-        if ((newEdge1 < currentEdge) && (newEdge2 < currentEdge)) {
+        int currentEdge = abs(parentY - childY) + abs(parentX - childX); // calculates distance of current existing edge
+        int newEdge1 = abs(parentY - steinerY) + abs(parentX - steinerX); // calculates distance of 1st new edge created by steiner point
+        int newEdge2 = abs(childY - steinerY) + abs(childX - steinerX); // calculates distance of 2nd new edge created by steiner point
+        if ((newEdge1 < currentEdge) && (newEdge2 < currentEdge)) { // wire length becomes smaller if both new edges are smaller
             tempParents[indexOfTemp] = currentGridParents[i];
             tempChildren[indexOfTemp] = potentialSteiner;
             indexOfTemp++;
             tempParents[indexOfTemp] = potentialSteiner;
             tempChildren[indexOfTemp] = currentGridChildren[i];
             indexOfTemp++;
-        } else {
+        } else { // wire length will increase or not change
             tempParents[indexOfTemp] = currentGridParents[i];
             tempChildren[indexOfTemp] = currentGridChildren[i];
             indexOfTemp++;
         }
     }
-    int wireLength = steinerWL(tempParents, tempChildren, gridSize);
-    int gain = bestWL - wireLength;
+    int wireLength = steinerWL(tempParents, tempChildren, gridSize); // use newly created edges to calculate the WL
+    int gain = bestWL - wireLength; // get the gain
     return gain;
 }
 
@@ -981,10 +985,6 @@ void runKR(bool hananGrid[], int gridSize, int N, int bestWL) {
 // x = grid number - (y*gridSize+y)
 // (x, y) is the coordinate
 void hananGrid(int parent_nodes[], int child_nodes[], int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts, int N, int gridSize, int bestWL) {
-    int new_parents[N]; // need new parents because steiner points will become parents
-    for (int i = 0; i < N; i++) {
-        new_parents[i] = parent_nodes[i];
-    }
     int numberOfPoints = (gridSize*(gridSize+1)+gridSize) + 1;
     bool isSteiner[numberOfPoints]; // the indexes of the array correspond to the grid number. if value == true, then its a steiner point
     for (int i = 0; i < gridSize*(gridSize+1)+gridSize + 1; i++) {
@@ -1012,7 +1012,7 @@ void hananGrid(int parent_nodes[], int child_nodes[], int *graph_D, int *graph_y
 
 
 
-
+// calculates WL of MST
 int calculateWL(int parent_nodes[], int child_nodes[], int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts, int N) {
     int wireLength = 0;
     int pointA = 0;
@@ -1083,11 +1083,6 @@ void writeWirelengths(int mst, int lrst, int kr)
 
 }
 
-
-
-
-
-
 int getGridSize(std::string filepath) {
     int index1 = filepath.find_last_of('_');
     int index2 = filepath.find_last_of('.');
@@ -1137,8 +1132,11 @@ int main(int argc, char** argv)
     int child_nodes[N];
 
     
-    clock_t c_start = clock();
-
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
+    auto c_start = high_resolution_clock::now(); // Capture start time of the algos
     cout << endl << "============== Create Weight Graph =================" << endl << endl;
     // create 2D arrays with values for Prim
     createWeightGraphs(*graph_D, *graph_y, *graph_x, x, y, N); 
@@ -1146,13 +1144,13 @@ int main(int argc, char** argv)
     // Run Prim's Algorithm
     cout << endl << "============== Generating MST =================" << endl << endl;
     runPrim(*graph_D, *graph_y, *graph_x, parent_nodes, child_nodes, N);
-
-    clock_t c_endPrim = clock();
+    auto c_endPrim = high_resolution_clock::now(); // Capture end time of Prim
+    
     // Run L-RST Algorithm
     cout << endl << "============== Running L-RST =================" << endl << endl;
     int overlap_LRST = runLRST(*graph_D, *graph_y, *graph_x, x, y, parent_nodes, child_nodes, N);
-
-    clock_t c_endLRST = clock();
+    auto c_endLRST = high_resolution_clock::now(); // Capture end time of L-RST
+    
     // Run Kahng / Robins Algorithm 
     finalSteinerParents.push_back(0);
     finalSteinerChildren.push_back(0);
@@ -1160,30 +1158,30 @@ int main(int argc, char** argv)
     int initialWL = calculateWL(parent_nodes, child_nodes, *graph_D, *graph_y, *graph_x, x, y, N);
     hananGrid(parent_nodes, child_nodes, *graph_D, *graph_y, *graph_x, x, y, N, gridSize, initialWL);
     writeKRResults();
-
-
-    clock_t c_endKR = clock();
+    auto c_endKR = high_resolution_clock::now(); // Capture end time of KR and all Algos
 
     // calculate Wirelength
     int origWL = calculateWL(parent_nodes, child_nodes, *graph_D, *graph_y, *graph_x, x, y, N);
     int LRST_WL = origWL - overlap_LRST;
-    int KR_WL = 0; // TODO - update this 
+    int KR_WL = wireLengths.back(); 
 
     writeWirelengths(origWL, LRST_WL, KR_WL);
 
-    clock_t c_end = clock();
-    double time_elapsed_ms = 1000.0 * (c_end-c_start) / CLOCKS_PER_SEC; 
-    double time_elapsed_MST_ms = 1000.0 * (c_endPrim - c_start) / CLOCKS_PER_SEC; 
-    double time_elapsed_LRST_ms = 1000.0 * (c_endLRST - c_endPrim) / CLOCKS_PER_SEC; 
-    double time_elapsed_KR_ms = 1000.0 * (c_endKR - c_endLRST) / CLOCKS_PER_SEC; 
+    auto c_end = high_resolution_clock::now();
+    duration<double, std::milli> time_elapsed_ms = c_end - c_start; 
+    duration<double, std::milli> time_elapsed_MST_ms = c_endPrim - c_start; 
+    duration<double, std::milli> time_elapsed_LRST_ms = c_endLRST - c_endPrim; 
+    duration<double, std::milli> time_elapsed_KR_ms = c_endKR - c_endLRST; 
 
     cout << "===================================" << endl;
+    cout << "Grid Size: " << gridSize << "x" << gridSize << ", Number of Points: " << N << endl;
     cout << "Original Wirelength: " << origWL << endl;
     cout << "Wirelength after L-RST: " << LRST_WL << endl;
     cout << "Wirelength after Kahng / Robins: " << KR_WL << endl;
-    cout << "CPU time used for generating MST: " << time_elapsed_MST_ms / 1000.0 << " s\n";
-    cout << "CPU time used for running L-RST: " << time_elapsed_LRST_ms / 1000.0 << " s\n";
-    cout << "CPU time used for running Kahng / Robins: " << time_elapsed_KR_ms / 1000.0 << " s\n";
+    cout << "CPU time used for generating MST: " << time_elapsed_MST_ms.count() << " ms\n";
+    cout << "CPU time used for running L-RST: " << time_elapsed_LRST_ms.count() << " ms\n";
+    cout << "CPU time used for running Kahng / Robins: " << time_elapsed_KR_ms.count() << " ms\n";
+    cout << "CPU time used for all 3 algorithms: " << time_elapsed_ms.count() << " ms\n";
     cout << "===================================" << endl;
 
 
