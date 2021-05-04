@@ -237,8 +237,12 @@ def generate_plots(file_pts, file_mst, file_lrst, file_kr, file_kr_lengths, file
     except: 
         print("cannot show plot in Matplotlib")
 
-    benchmark = file_pts[:-4]
-    plt.savefig(f'{benchmark}.png')
+    benchmark = file_pts.split('/')[-1]
+    png_filename = benchmark[:-4] + '.png'
+    
+    print("Saving snapshot of results in current directory. Filename:")
+    print(png_filename)
+    plt.savefig(png_filename)
     return
 
 if __name__ == "__main__":

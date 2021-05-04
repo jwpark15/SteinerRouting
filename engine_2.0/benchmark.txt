@@ -1,1 +1,1 @@
-../Points/points_10_9.pts
+../Points/points_30_50.pts
