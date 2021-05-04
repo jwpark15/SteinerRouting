@@ -2,7 +2,10 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
 from matplotlib.collections import LineCollection
 import random
+import warnings
 
+
+# return x and y points after parsing file
 def get_points(filename):
     x_pts = []
     y_pts = []
@@ -16,7 +19,7 @@ def get_points(filename):
             
     return x_pts, y_pts
 
-
+# get line segments that connect each pair of nodes in the MST
 def get_MST_lines(filename, x, y):
     parents = []
     children = []
@@ -37,6 +40,7 @@ def get_MST_lines(filename, x, y):
     return plot_lines
 
 
+# plot the MST
 def plot_MST(file_pts, file_mst, ax):
     x, y = get_points(file_pts) 
     mst_lines = get_MST_lines(file_mst, x, y)    
@@ -52,6 +56,7 @@ def plot_MST(file_pts, file_mst, ax):
 
 
 
+# return collection of horizontal and vertical line segments from Lower/Upper Ls
 def get_LRST_lines(filename, x, y):
     parents = []
     children = []
@@ -93,6 +98,7 @@ def get_LRST_lines(filename, x, y):
 
     return plot_lines, corner_pts
 
+# return collection of points that represent Steiner points in L-RST representation
 def get_LRST_Steiner(lrst_lines, corner_pts, nodes):
     steiner_x = []
     steiner_y = []
@@ -109,6 +115,7 @@ def get_LRST_Steiner(lrst_lines, corner_pts, nodes):
                 continue
             if (x in x_range) and (y in y_range):
                 counter += 1
+        # this is a Steiner point
         if counter >= 3:
             steiner_x.append(x)
             steiner_y.append(y)
@@ -116,6 +123,7 @@ def get_LRST_Steiner(lrst_lines, corner_pts, nodes):
     return steiner_x, steiner_y
 
 
+# plot the rectilinearized MST w/ Steiner points added 
 def plot_LRST(file_pts, file_lrst, ax):
     x, y = get_points(file_pts) 
     nodes = [[x[i], y[i]] for i in range(len(x))]
@@ -235,7 +243,7 @@ def generate_plots(file_pts, file_mst, file_lrst, file_kr, file_kr_lengths, file
     try: 
         plt.show()
     except: 
-        print("cannot show plot in Matplotlib")
+        print("Unable to show plot in Matplotlib due to backend issue. See PNG instead.")
 
     benchmark = file_pts.split('/')[-1]
     png_filename = benchmark[:-4] + '.png'
@@ -246,6 +254,7 @@ def generate_plots(file_pts, file_mst, file_lrst, file_kr, file_kr_lengths, file
     return
 
 if __name__ == "__main__":
+    warnings.filterwarnings("error")
     with open("benchmark.txt", 'r') as f:
         points_file = f.readline()
 
