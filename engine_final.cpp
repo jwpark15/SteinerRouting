@@ -791,6 +791,21 @@ int runLRST(int *graph_D, int *graph_y, int *graph_x, int x[], int y[], int pare
     return overlap;
 }
 
+int calculateWL(int parent_nodes[], int child_nodes[], int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts, int N) {
+    int wireLength = 0;
+    int pointA = 0;
+    int pointB = 0;
+    int distance = 0;
+
+    for (int i = 1; i < N; i++) {
+        pointA = parent_nodes[i];
+        pointB = child_nodes[i];
+        distance = abs(*(x_pts + pointA) - *(x_pts + pointB)) + abs(*(y_pts + pointA) - *(y_pts + pointB));
+        wireLength += distance;
+    }
+
+    return wireLength;
+}
 
 // Finds the wirelength of a steiner graph
 int steinerWL(int parent_nodes[], int child_nodes[], int gridSize) {
@@ -822,6 +837,8 @@ int steinerWL(int parent_nodes[], int child_nodes[], int gridSize) {
     }
     return currentWL;
 }
+
+
 // KR Functions
 // Converts the MST points to grid numbers
 // REFERENCE
@@ -1013,21 +1030,6 @@ void hananGrid(int parent_nodes[], int child_nodes[], int *graph_D, int *graph_y
 
 
 
-int calculateWL(int parent_nodes[], int child_nodes[], int *graph_D, int *graph_y, int *graph_x, int *x_pts, int *y_pts, int N) {
-    int wireLength = 0;
-    int pointA = 0;
-    int pointB = 0;
-    int distance = 0;
-
-    for (int i = 1; i < N; i++) {
-        pointA = parent_nodes[i];
-        pointB = child_nodes[i];
-        distance = abs(*(x_pts + pointA) - *(x_pts + pointB)) + abs(*(y_pts + pointA) - *(y_pts + pointB));
-        wireLength += distance;
-    }
-
-    return wireLength;
-}
 
 // parse input file to get x and y coordinates for each node
 void parseFile(int *x, int *y, int N, const char filename[]) 
@@ -1153,6 +1155,7 @@ int main(int argc, char** argv)
     int overlap_LRST = runLRST(*graph_D, *graph_y, *graph_x, x, y, parent_nodes, child_nodes, N);
 
     clock_t c_endLRST = clock();
+
     // Run Kahng / Robins Algorithm 
     finalSteinerParents.push_back(0);
     finalSteinerChildren.push_back(0);
@@ -1165,11 +1168,10 @@ int main(int argc, char** argv)
     clock_t c_endKR = clock();
 
     // calculate Wirelength
-    int origWL = calculateWL(parent_nodes, child_nodes, *graph_D, *graph_y, *graph_x, x, y, N);
-    int LRST_WL = origWL - overlap_LRST;
+    int LRST_WL = initialWL - overlap_LRST;
     int KR_WL = 0; // TODO - update this 
 
-    writeWirelengths(origWL, LRST_WL, KR_WL);
+    writeWirelengths(initialWL, LRST_WL, KR_WL);
 
     clock_t c_end = clock();
     double time_elapsed_ms = 1000.0 * (c_end-c_start) / CLOCKS_PER_SEC; 
@@ -1178,7 +1180,7 @@ int main(int argc, char** argv)
     double time_elapsed_KR_ms = 1000.0 * (c_endKR - c_endLRST) / CLOCKS_PER_SEC; 
 
     cout << "===================================" << endl;
-    cout << "Original Wirelength: " << origWL << endl;
+    cout << "Original Wirelength: " << initialWL << endl;
     cout << "Wirelength after L-RST: " << LRST_WL << endl;
     cout << "Wirelength after Kahng / Robins: " << KR_WL << endl;
     cout << "CPU time used for generating MST: " << time_elapsed_MST_ms / 1000.0 << " s\n";
