@@ -1,0 +1,5 @@
+Steps to execute:
+
+make
+./engine <name of pts file>
+python3 plotter.py

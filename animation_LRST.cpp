@@ -14,7 +14,7 @@
 using namespace std;
 
 // set to 0 to disable debugging prints
-#define DEBUG 0
+#define DEBUG 1
 #define VERBOSE_DEBUG 0
 
 
@@ -671,7 +671,7 @@ int setChildOrientation(vector<Node> &tree, int parent_node, int child_index, in
 }
 
 // traverse tree top --> down to assign upper/lower to all edges in tree
-void assign_Ls_top_down(vector<Node> &tree, int L_assignments[], int N)
+void assign_Ls_top_down(vector<Node> &tree, int L_assignments[], int N, int wirelength_reductions[])
 {
     int numberAssigned = 1;
     int current_node = 0;
@@ -685,6 +685,8 @@ void assign_Ls_top_down(vector<Node> &tree, int L_assignments[], int N)
     for(int i = 0; i<N; ++i) 
         tree[i].reset_child_pointer();
 
+    int temproot = max(tree[0].get_upper_Z(), tree[0].get_lower_Z());
+    wirelength_reductions[0] = temproot;
     while (numberAssigned < N) {
         current_node = top_down_stack.top();    
         next_node = tree[current_node].pick_next_child();
@@ -702,6 +704,11 @@ void assign_Ls_top_down(vector<Node> &tree, int L_assignments[], int N)
             L_assignments[next_node] = temp;
             isUpper = temp;
             top_down_stack.push(next_node);
+
+            // added for animation
+            int temp2 = max(tree[next_node].get_upper_Z(), tree[next_node].get_lower_Z());
+            cout << "next node: " << next_node << ", Z: " << temp2 << ", Num assign: " << numberAssigned << endl;
+            wirelength_reductions[next_node] = temp2;
         }
     }
 }
@@ -721,6 +728,17 @@ void writeLRSTResults(int L[], int parent_nodes[], int child_nodes[], int N)
 
 }
 
+void writeLRSTWirelengths(int wirelengths[], int child_nodes[], int N)
+{
+    ofstream results;
+    results.open("LRSTWirelengths.txt");
+    for (int i = 0; i < N; ++i)
+        results << child_nodes[i] << " " << wirelengths[child_nodes[i]] << endl;
+
+    results.close();
+    return;
+}
+
 // run L-RST Algorithm
 // return overlap
 int runLRST(int *graph_D, int *graph_y, int *graph_x, int x[], int y[], int parent_nodes[], int child_nodes[], int N)
@@ -736,13 +754,15 @@ int runLRST(int *graph_D, int *graph_y, int *graph_x, int x[], int y[], int pare
     int L_assignments[N]; // for each index, 0 is lower, 1 is upper
     L_assignments[0] = 1;
     if(DEBUG) {cout << endl << "--- assigning Ls top --> down ---" << endl << endl;}
-    assign_Ls_top_down(tree, L_assignments, N);
+    int wirelengths[N];
+    assign_Ls_top_down(tree, L_assignments, N, wirelengths);
 
     if(DEBUG) {
         for (int i = 0; i < N; ++i)
             cout << "i: " << i << ", L assigned: " << L_assignments[i] << endl;
     }
     writeLRSTResults(L_assignments, parent_nodes, child_nodes, N);
+    writeLRSTWirelengths(wirelengths, child_nodes, N);
     return overlap;
 }
 

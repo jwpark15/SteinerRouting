@@ -130,7 +130,7 @@ void runPrim(int *graph_D, int *graph_y, int *graph_x, int N)
     node_parents[0] = -1;
     
     int min_index, min_index_y, min_index_x, dist, y_diff, x_max;
-    for (int i = 0; i < N; ++i) {
+    for (int i = 0; i < (N-1); ++i) {
         min_index = findMinKeyIndex(node_keys, connected, N);
         min_index_y = findMinKeyIndexY(node_keys_y, connected, N);
         min_index_x = findMinKeyIndexX(node_keys_x, connected, N);

@@ -42,13 +42,15 @@ def plot_MST(file_pts, file_mst, ax, camera):
     x, y = get_points(file_pts) 
     plot_lines = get_MST_lines(file_mst, x, y)    
     for i in range(len(plot_lines)):
-        ax.scatter(x,y, color='orange')
+        ax.scatter(x[0],y[0], color='red')
+        ax.scatter(x[1:],y[1:], color='orange')
         for line in plot_lines[:i]:
             plt.plot(line[0], line[1], color='blue')
         camera.snap()
 
     # fix bug where last line doesn't plot
-    ax.scatter(x,y, color='orange')
+    ax.scatter(x[0],y[0], color='red')
+    ax.scatter(x[1:],y[1:], color='orange')
     for line in plot_lines:
         plt.plot(line[0], line[1], color='blue')
     camera.snap()
@@ -96,17 +98,26 @@ def get_LRST_lines(filename, x, y):
 
 def plot_LRST(file_pts, file_lrst, MST_lines, ax, camera):
     x, y = get_points(file_pts) 
+    counter = 0
     plot_lines = get_LRST_lines(file_lrst, x, y)    
     for i in range(len(plot_lines)):
-        ax.scatter(x,y, color='orange')
+        ax.scatter(x[0],y[0], color='red')
+        ax.scatter(x[1:],y[1:], color='orange')
+        counter+=1
         for line in plot_lines[:i]:
             plt.plot(line[0], line[1], color='red')
         for m_line in MST_lines[floor(i/2):]:
             plt.plot(m_line[0], m_line[1], color='blue')
+        if (counter%2) == 1: 
+            camera.snap()
+
+    # make sure last is captured
+    if (counter%2) == 0: 
         camera.snap()
 
     # fix bug where last line doesn't plot
-    ax.scatter(x,y, color='orange')
+    ax.scatter(x[0],y[0], color='red')
+    ax.scatter(x[1:],y[1:], color='orange')
     for line in plot_lines:
         plt.plot(line[0], line[1], color='red')
     camera.snap()
@@ -131,7 +142,7 @@ def generate_plots(file_pts, file_mst, file_lrst, file_wirelengths):
     ax.grid()
     MST_lines = plot_MST(file_pts, file_mst, ax, camera)
 
-    ax = plot_LRST(file_pts, file_lrst, MST_lines, ax, camera)
+    LRST_lines = plot_LRST(file_pts, file_lrst, MST_lines, ax, camera)
     camera.snap()
 
     animation = camera.animate()
