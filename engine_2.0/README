@@ -1,0 +1,7 @@
+cd <engine_dir>
+make
+./engine <name_of_benchmark.pts>
+
+
+# to visualize
+python3 plotter.py
