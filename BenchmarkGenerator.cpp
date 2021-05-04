@@ -14,7 +14,7 @@ using namespace std;
 int main() {
     srand(time(NULL));
     int uniquePoints = 0;
-    int goalNumberOfPoints  = (rand() % (500 + 1 - 100)) + 100;
+    int goalNumberOfPoints  = (rand() % (200 + 1 - 100)) + 100;
     int gridSize = goalNumberOfPoints * 0.3;
 
     int test = 5;
@@ -44,7 +44,6 @@ int main() {
                 break;
             }
         }
-        cout << "Here" << endl;
 
         if (duplicate || randomX > gridSize || randomY > gridSize) {
             // This is a bad point. Do not use it
