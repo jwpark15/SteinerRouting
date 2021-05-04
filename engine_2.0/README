@@ -1,7 +1,10 @@
 cd <engine_dir>
-make
+make all
 ./engine <name_of_benchmark.pts>
 
 
 # to visualize
 python3 plotter.py
+
+# to generate random benchmark
+./generate_benchmark
