@@ -4,13 +4,16 @@ cd <engine_dir>
 make all
 
 # to run the engine, call the executable and provide the name of benchmark as the only command line arg
-
 ./engine <name_of_benchmark.pts>
 
 ## for example
 ./engine ../Points/points_30_50.pts
 
 # to visualize
+## if matplotlib is not installed
+pip3 install --user matplotlib
+
+## run the plotter
 python3 plotter.py
 
 # to generate random benchmark
