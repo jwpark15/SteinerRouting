@@ -1,7 +1,14 @@
+# To compile the code from scratch
+
 cd <engine_dir>
 make all
+
+# to run the engine, call the executable and provide the name of benchmark as the only command line arg
+
 ./engine <name_of_benchmark.pts>
 
+## for example
+./engine ../Points/points_30_50.pts
 
 # to visualize
 python3 plotter.py
