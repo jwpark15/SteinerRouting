@@ -73,6 +73,7 @@ int main(int argc, char** argv)
     auto c_endLRST = high_resolution_clock::now(); // Capture end time of L-RST
 
     // Run Kahng / Robins Algorithm 
+    cout << endl << "============== Running Kahng / Robins =================" << endl << endl;
     int gridSize = getGridSize(temp_filename);
     init_KR();
     hananGrid(parent_nodes, child_nodes, *graph_D, *graph_y, *graph_x, x, y, N, gridSize, initialWL);
