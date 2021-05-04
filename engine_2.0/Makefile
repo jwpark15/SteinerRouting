@@ -21,3 +21,8 @@ PrimParams.o: PrimParams.cpp PrimParams.h
 
 results.o: results.cpp results.h
 	$(CC) $(FLAGS) -c results.cpp
+
+rand_benchmarks: BenchmarkGenerator.cpp
+	$(CC) $(FLAGS) BenchmarkGenerator.cpp -o generate_benchmark
+
+all: engine rand_benchmarks
