@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import figure
 from matplotlib.collections import LineCollection
 import random
 
@@ -219,7 +220,7 @@ def generate_plots(file_pts, file_mst, file_lrst, file_kr, file_kr_lengths, file
     # MST
     ax[0].set_title("Minimum Spanning Tree | WL = " + str(MST_WL))
     ax[0] = plot_MST(file_pts, file_mst, ax[0])
-
+    
     # L-RST
     ax[1].set_title("Final L-RST | WL = " + str(LRST_WL))
     ax[1] = plot_LRST(file_pts, file_lrst, ax[1])
@@ -229,7 +230,15 @@ def generate_plots(file_pts, file_mst, file_lrst, file_kr, file_kr_lengths, file
     ax[2] = plot_KR(file_pts, file_kr, file_kr_lengths, file_kr_steiners, grid_size, ax[2])
 
     # display
-    plt.show()
+    fig = plt.gcf()
+    fig.set_size_inches(16, 5)
+    try: 
+        plt.show()
+    except: 
+        print("cannot show plot in Matplotlib")
+
+    benchmark = file_pts[:-4]
+    plt.savefig(f'{benchmark}.png')
     return
 
 if __name__ == "__main__":
